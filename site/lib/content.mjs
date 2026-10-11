@@ -76,6 +76,7 @@ export function loadCollection(root, subdir, defaultType) {
         author: data.author || 'APECO Voirets',
         location: data.location || '',
         address: data.address || '',
+        geo: data.geo && Number.isFinite(data.geo.lat) && Number.isFinite(data.geo.lon) ? data.geo : null,
         performer: data.performer || '',
         coOrganizers: data.co_organizers || [],
         time: data.time || '',

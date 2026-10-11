@@ -4,9 +4,13 @@ import { mkdtempSync, rmSync, existsSync, readFileSync, statSync, cpSync, mkdirS
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import JSZip from 'jszip';
-import { build, ROOT } from '../site/build.mjs';
+import { build, ROOT, osmUrls } from '../site/build.mjs';
 import { slugify, formatFrenchDate } from '../site/lib/content.mjs';
 import { eventDates, postalAddress } from '../site/lib/jsonld.mjs';
+import { withGeo } from '../site/lib/geocode.mjs';
+import { renderStaticMap, ensureMapImage, mapImagePath, chooseStyle } from '../site/lib/staticmap.mjs';
+import { PNG } from 'pngjs';
+import jpeg from 'jpeg-js';
 import {
   convertDocxToMarkdown,
   detectDocumentType,
@@ -17,6 +21,10 @@ import {
   processIssue,
   typeFromFormAnswer,
 } from '../scripts/process-issue-docx.mjs';
+
+// Map previews are drawn in the keyless ÖPNVKarte style unless a Thunderforest
+// key is set; keep the tests independent of the environment.
+delete process.env.THUNDERFOREST_API_KEY;
 
 function tempDir(t) {
   const dir = mkdtempSync(path.join(tmpdir(), 'apeco-'));
@@ -54,6 +62,13 @@ function buildFixture(t, options = {}) {
   const out = path.join(root, '_site');
   build({ root, outDir: out, today: options.today || '2025-10-01' });
   return (p) => readFileSync(path.join(out, p), 'utf8');
+}
+
+/** A 256×256 tile of one colour, as PNG bytes. */
+function solidTile([r, g, b]) {
+  const png = new PNG({ width: 256, height: 256 });
+  for (let i = 0; i < png.data.length; i += 4) png.data.set([r, g, b, 255], i);
+  return PNG.sync.write(png);
 }
 
 async function minimalDocx(paragraphs) {
@@ -272,9 +287,19 @@ test('a Word announcement becomes an activity page', async (t) => {
     labels: [],
     body: formBody({ time: '16h00', location: 'Préau du CO des Voirets', address: 'Chemin des Voirets 22, 1228 Plan-les-Ouates' }),
   };
-  const result = await processIssue({ issue }, { root, fetchDocx: async () => ANNONCE });
+  const looked = [];
+  const result = await processIssue(
+    { issue },
+    {
+      root,
+      fetchDocx: async () => ANNONCE,
+      geocodeAddress: async (a) => (looked.push(a), { lat: 46.172859, lon: 6.116828 }),
+      fetchTileImpl: async () => solidTile([200, 200, 200]),
+    }
+  );
   assert.equal(result.type, 'event');
   assert.equal(result.page, 'evenements/2026-12-11-stand-de-lescalade-2026.html');
+  assert.deepEqual(looked, ['Chemin des Voirets 22, 1228 Plan-les-Ouates']);
 
   const { data, content } = (await import('gray-matter')).default(readFileSync(path.join(root, result.file), 'utf8'));
   assert.equal(data.title, "Stand de l'Escalade 2026");
@@ -282,6 +307,8 @@ test('a Word announcement becomes an activity page', async (t) => {
   assert.equal(data.time, '16h00');
   assert.equal(data.location, 'Préau du CO des Voirets');
   assert.equal(data.address, 'Chemin des Voirets 22, 1228 Plan-les-Ouates');
+  assert.deepEqual(data.geo, { lat: 46.172859, lon: 6.116828 });
+  assert.ok(existsSync(path.join(root, 'static/images/cartes/46.172859_6.116828-opnvkarte.jpg')), 'map preview written');
   assert.equal(data.source_issue, '#42');
   // Salutation skipped; first real sentence used.
   assert.match(data.summary, /^L'APECO Voirets tiendra un stand/);
@@ -405,4 +432,99 @@ test('event times and addresses', () => {
   assert.deepEqual(eventDates('2026-12-11', 'en soirée'), { startDate: '2026-12-11' });
   assert.deepEqual(eventDates('2026-12-11', ''), { startDate: '2026-12-11' });
   assert.equal(postalAddress('Rue sans NPA').streetAddress, 'Rue sans NPA');
+});
+
+test('activities with coordinates get a click-to-load OpenStreetMap map', (t) => {
+  const root = fixtureRoot(t);
+  const page = (name, extra) =>
+    writeFileSync(
+      path.join(root, 'content/evenements', name),
+      ['---', 'title: "Café"', 'date: "2026-01-19"', 'location: "CO des Voirets"', ...extra, '---', '', 'Texte.', ''].join('\n')
+    );
+  page('2026-01-19-avec-carte.md', ['address: "Chemin des Voirets 22, 1228 Plan-les-Ouates"', 'geo: { "lat": 46.172859, "lon": 6.116828 }']);
+  page('2026-01-20-sans-coordonnees.md', ['address: "Chemin des Voirets 22, 1228 Plan-les-Ouates"']);
+  page('2026-01-21-sans-adresse.md', []);
+  const out = path.join(root, '_site');
+  build({ root, outDir: out, today: '2026-10-11' });
+  const read = (p) => readFileSync(path.join(out, 'evenements', p), 'utf8');
+
+  const html = read('2026-01-19-avec-carte.html');
+  const { embed, page: osmPage } = osmUrls({ lat: 46.172859, lon: 6.116828 });
+  assert.match(html, /<h2>Lieu<\/h2>/);
+  assert.ok(html.includes(`data-map-src="${embed.replaceAll('&', '&amp;')}"`));
+  assert.ok(html.includes(`href="${osmPage.replaceAll('&', '&amp;')}"`));
+  assert.match(embed, /marker=46\.172859,6\.116828/);
+  // Nothing is loaded from openstreetmap.org until the visitor clicks.
+  assert.doesNotMatch(html, /<iframe/);
+  assert.deepEqual(jsonLd(html).location.geo, { '@type': 'GeoCoordinates', latitude: 46.172859, longitude: 6.116828 });
+
+  const noGeo = read('2026-01-20-sans-coordonnees.html');
+  assert.match(noGeo, /Chemin des Voirets 22/);
+  assert.doesNotMatch(noGeo, /event-map/);
+  assert.doesNotMatch(read('2026-01-21-sans-adresse.html'), /event-place/);
+});
+
+test('geo is written next to the address in the frontmatter', () => {
+  const text = '---\ntitle: "A"\naddress: "Rue 1, 1200 Genève"\ngeo: { "lat": 1, "lon": 2 }\ntype: "event"\n---\n\nTexte.\n';
+  assert.equal(
+    withGeo(text, { lat: 46.1, lon: 6.1 }),
+    '---\ntitle: "A"\naddress: "Rue 1, 1200 Genève"\ngeo: { "lat": 46.1, "lon": 6.1 }\ntype: "event"\n---\n\nTexte.\n'
+  );
+});
+
+test('the static map preview is assembled from the tiles around the point', async () => {
+  const requested = [];
+  // Each tile gets its own colour, so the output shows which tile is where.
+  const colour = (x, y) => [(x * 37) % 256, (y * 53) % 256, 128];
+  const image = await renderStaticMap({ lat: 46.172859, lon: 6.116828 }, { width: 960, height: 360, zoom: 16 }, async (z, x, y) => {
+    requested.push([z, x, y]);
+    return solidTile(colour(x, y));
+  });
+  const { width, height, data } = jpeg.decode(image);
+  assert.deepEqual([width, height], [960, 360]);
+  assert.ok(requested.length <= 15, `only the tiles in view (${requested.length})`);
+  assert.ok(requested.every(([z]) => z === 16));
+  // The centre pixel comes from the tile containing the point (33881/23269 at z16).
+  const centre = (180 * 960 + 480) * 4;
+  const [r, g, b] = colour(33881, 23269);
+  assert.ok(Math.abs(data[centre] - r) < 12 && Math.abs(data[centre + 1] - g) < 12 && Math.abs(data[centre + 2] - b) < 12);
+});
+
+test('the preview is shown behind the map button, with the OSM credit', async (t) => {
+  const root = fixtureRoot(t);
+  const geo = { lat: 46.2, lon: 6.15 };
+  writeFileSync(
+    path.join(root, 'content/evenements/2026-01-19-carte.md'),
+    ['---', 'title: "Café"', 'date: "2026-01-19"', 'address: "Chemin des Voirets 22, 1228 Plan-les-Ouates"', 'geo: { "lat": 46.2, "lon": 6.15 }', '---', '', 'Texte.', ''].join('\n')
+  );
+  const out = path.join(root, '_site');
+  build({ root, outDir: out, today: '2026-10-11' });
+  const before = readFileSync(path.join(out, 'evenements/2026-01-19-carte.html'), 'utf8');
+  assert.doesNotMatch(before, /has-preview/, 'no preview image yet: plain button');
+
+  await ensureMapImage(root, geo, { fetchTileImpl: async () => solidTile([10, 20, 30]) });
+  build({ root, outDir: out, today: '2026-10-11' });
+  const html = readFileSync(path.join(out, 'evenements/2026-01-19-carte.html'), 'utf8');
+  assert.match(html, /class="event-map has-preview"/);
+  assert.ok(html.includes(`background-image: url('../${mapImagePath(geo, 'opnvkarte')}')`));
+  assert.ok(existsSync(path.join(out, mapImagePath(geo, 'opnvkarte'))), 'preview is published with the site');
+  assert.match(html, /href="https:\/\/memomaps\.de\/"[^>]*>ÖPNVKarte</);
+  assert.match(html, /href="https:\/\/www\.openstreetmap\.org\/copyright"[^>]*>© OpenStreetMap</);
+  // The interactive map is the Transport map, and the TPG link is there.
+  assert.match(html, /data-map-src="[^"]*layer=transportmap/);
+  assert.match(html, /href="https:\/\/www\.tpg\.ch\/fr\/voyager\/planifier-votre-voyage\/itineraires"[^>]*>calculer votre itinéraire avec les TPG/);
+
+  // A Thunderforest preview, matching the interactive map, is preferred when present.
+  await ensureMapImage(root, geo, { style: 'transport', fetchTileImpl: async () => solidTile([1, 2, 3]) });
+  build({ root, outDir: out, today: '2026-10-11' });
+  const withTransport = readFileSync(path.join(out, 'evenements/2026-01-19-carte.html'), 'utf8');
+  assert.ok(withTransport.includes(mapImagePath(geo, 'transport')));
+  assert.match(withTransport, />Thunderforest</);
+  assert.doesNotMatch(html, /tile\.openstreetmap\.org|<iframe/, 'nothing loaded from OSM before the click');
+  assert.doesNotMatch(html, /aria-hidden="true">©/, '© stays readable for screen readers');
+});
+
+test('the preview style depends on the Thunderforest key', () => {
+  assert.equal(chooseStyle({}), 'opnvkarte');
+  assert.equal(chooseStyle({ THUNDERFOREST_API_KEY: 'x' }), 'transport');
 });

@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import MarkdownIt from 'markdown-it';
 import { escapeHtml, loadCollection, readFrontmatter } from './lib/content.mjs';
 import { eventJsonLd, jsonLdScript } from './lib/jsonld.mjs';
+import { findMapImage } from './lib/staticmap.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const ROOT = path.resolve(__dirname, '..');
@@ -70,7 +71,11 @@ function fillSiteValues(text, site) {
 
 // Emoji used as icons are decorative: hide them from screen readers. Only
 // text between tags is touched, never attribute values.
-const EMOJI = /(?:\p{Regional_Indicator}{2}|\p{Extended_Pictographic}\uFE0F?(?:\u200D\p{Extended_Pictographic}\uFE0F?)*)/gu;
+// Only characters shown as emoji: those with emoji presentation, or followed by
+// the emoji variation selector (U+FE0F). © and ® are pictographic too, but are
+// text and must stay readable.
+const EMOJI =
+  /(?:\p{Regional_Indicator}{2}|(?:\p{Emoji_Presentation}|\p{Extended_Pictographic}\uFE0F)\uFE0F?(?:\u200D\p{Extended_Pictographic}\uFE0F?)*)/gu;
 function hideEmoji(text) {
   return text.replace(EMOJI, (e) => `<span aria-hidden="true">${e}</span>`);
 }
@@ -222,7 +227,60 @@ function detailHeader(item) {
 </div>`;
 }
 
-function renderDetail(md, item, collection, base) {
+/** OpenStreetMap links for a point: the embeddable map and the full map page. */
+export function osmUrls({ lat, lon }) {
+  // Small enough to fit a 360 px high frame at zoom 16, the zoom of the
+  // static preview, so the map does not jump when it is loaded.
+  const dLat = 0.0022;
+  const dLon = 0.004;
+  const bbox = [lon - dLon, lat - dLat, lon + dLon, lat + dLat].map((n) => n.toFixed(6)).join(',');
+  return {
+    // The Transport map shows tram and bus lines and stops: the view that
+    // helps most to plan the trip.
+    embed: `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=transportmap&marker=${lat},${lon}`,
+    page: `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=17/${lat}/${lon}&layers=T`,
+  };
+}
+
+// The place of an activity: name, address and, with coordinates, an
+// OpenStreetMap map. The interactive map is only loaded when the visitor asks
+// for it (static/js/main.js), so opening the page sends nothing to a third
+// party; until then a static preview from static/images/cartes/ is shown.
+function placeSection(item, base, root, site) {
+  if (!item.address && !item.geo) return '';
+  const lines = [item.location, item.address].filter(Boolean).map(escapeHtml);
+  let map = '';
+  if (item.geo) {
+    const { embed, page } = osmUrls(item.geo);
+    const preview = findMapImage(root, item.geo);
+    const style = preview ? ` style="background-image: url('${base}${preview.path}')"` : '';
+    const credit = preview
+      ? preview.credit
+          .map((c) => `<a href="${escapeHtml(c.href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(c.text)}</a>`)
+          .join(' | ')
+      : '';
+    map = `<div class="event-map${preview ? ' has-preview' : ''}" data-map-src="${escapeHtml(embed)}" data-map-title="Carte : ${escapeHtml(item.location || item.address)}"${style}>
+    ${preview ? '<span class="event-map-pin" aria-hidden="true"></span>' : ''}
+    <div class="event-map-panel">
+      <button type="button" class="btn btn-primary btn-sm event-map-load">🗺️ Afficher la carte interactive</button>
+      <p class="event-map-note">Fournie par OpenStreetMap, chargée seulement après un clic.</p>
+    </div>
+    ${preview ? `<span class="event-map-credit">${credit}</span>` : ''}
+  </div>
+  <p class="event-map-link"><a href="${escapeHtml(page)}" target="_blank" rel="noopener noreferrer">Voir sur OpenStreetMap &nearr;</a></p>`;
+  }
+  const transit = site.transport
+    ? `<p class="event-transit">🚋 Pour venir en transports publics : <a href="${escapeHtml(site.transport.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(site.transport.label)} &nearr;</a></p>`
+    : '';
+  return `<section class="event-place">
+  <h2>Lieu</h2>
+  <p>📍 ${lines.join('<br>')}</p>
+  ${map}
+  ${transit}
+</section>`;
+}
+
+function renderDetail(md, item, collection, base, root, site) {
   const { nav, back } = COLLECTIONS[collection];
   const body = md.render(item.markdown, { base });
   return `<div class="container">
@@ -230,6 +288,7 @@ function renderDetail(md, item, collection, base) {
   <article class="markdown-body">
 ${detailHeader(item)}
 ${body}
+${collection === 'events' ? placeSection(item, base, root, site) : ''}
   </article>
 </div>`;
 }
@@ -261,6 +320,13 @@ export function build({ root = ROOT, outDir = path.join(root, '_site'), today } 
   const items = Object.fromEntries(
     Object.entries(COLLECTIONS).map(([key, c]) => [key, loadCollection(root, c.dir, c.type)])
   );
+  for (const event of items.events) {
+    if (event.address && !event.geo) {
+      console.warn(`warning: ${event.out} has an address but no coordinates; run \`npm run geocode\` for its map`);
+    } else if (event.geo && !findMapImage(root, event.geo)) {
+      console.warn(`warning: ${event.out} has no map preview; run \`npm run geocode\``);
+    }
+  }
   const data = {
     reports: items.reports,
     upcoming: items.events.filter((e) => e.date >= today).reverse(), // soonest first
@@ -301,7 +367,7 @@ export function build({ root = ROOT, outDir = path.join(root, '_site'), today } 
           nav: COLLECTIONS[collection].nav,
           title: item.title,
           description: item.summary,
-          content: renderDetail(mdContent, item, collection, base),
+          content: renderDetail(mdContent, item, collection, base, root, site),
           year,
           head: collection === 'events' ? jsonLdScript(eventJsonLd(item, site)) : '',
         })

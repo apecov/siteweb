@@ -12,14 +12,17 @@
     "serve": "npx --yes serve _site",
     "watch": "node site/watch.mjs",
     "test": "node --test \"tests/*.test.mjs\"",
-    "docx": "node scripts/process-issue-docx.mjs"
+    "docx": "node scripts/process-issue-docx.mjs",
+    "geocode": "node scripts/geocode.mjs"
   },
   "devDependencies": {
     "@joplin/turndown-plugin-gfm": "^1.0.68",
     "gray-matter": "^4.0.3",
+    "jpeg-js": "^0.4.4",
     "jszip": "^3.10.1",
     "mammoth": "^1.9.0",
     "markdown-it": "^14.1.0",
+    "pngjs": "^7.0.0",
     "turndown": "^7.2.0"
   }
 }

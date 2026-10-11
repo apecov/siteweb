@@ -4,6 +4,7 @@ date: "2026-01-19"
 time: "19h30"
 location: "MQ sous l'Étoile, salle Ado, Grand-Lancy"
 address: "Avenue des Communes-Réunies 73, 1212 Grand-Lancy"
+geo: { "lat": 46.172879, "lon": 6.123776 }
 performer: "Marc-André Müller"
 co_organizers: [{ "name": "FAPEO", "alternateName": "Fédération des associations de parents d'élèves de l'enseignement obligatoire", "url": "https://www.fapeo.ch/" }]
 type: "event"

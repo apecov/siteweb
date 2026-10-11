@@ -36,7 +36,24 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 2. Membership Form: builds an e-mail to the committee
+  // 2. Activity maps: the OpenStreetMap iframe is only created on request, so
+  // visiting a page does not contact openstreetmap.org.
+  document.querySelectorAll('.event-map').forEach((container) => {
+    const button = container.querySelector('.event-map-load');
+    if (!button) return;
+    button.addEventListener('click', () => {
+      const iframe = el('iframe', {
+        src: container.dataset.mapSrc,
+        title: container.dataset.mapTitle || 'Carte',
+        loading: 'lazy',
+        referrerpolicy: 'no-referrer',
+      });
+      container.replaceChildren(iframe);
+      container.classList.add('is-loaded');
+    });
+  });
+
+  // 3. Membership Form: builds an e-mail to the committee
   const membershipForm = document.getElementById('membership-form');
   if (membershipForm) {
     membershipForm.addEventListener('submit', (e) => {
@@ -100,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 3. Contact Form
+  // 4. Contact Form
   const contactForm = document.getElementById('contact-form');
   if (contactForm) {
     contactForm.addEventListener('submit', (e) => {

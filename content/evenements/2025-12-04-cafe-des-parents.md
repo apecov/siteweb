@@ -4,6 +4,7 @@ date: "2025-12-04"
 time: "19h00"
 location: "Cycle d'orientation des Voirets"
 address: "Chemin des Voirets 22, 1228 Plan-les-Ouates"
+geo: { "lat": 46.172859, "lon": 6.116828 }
 type: "event"
 category: "Événements"
 author: "APECO Voirets"

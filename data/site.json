@@ -11,6 +11,10 @@
     "city": "Plan-les-Ouates",
     "canton": "Genève"
   },
+  "transport": {
+    "label": "calculer votre itinéraire avec les TPG",
+    "url": "https://www.tpg.ch/fr/voyager/planifier-votre-voyage/itineraires"
+  },
   "social": {
     "fapeo_website": "https://www.fapeo.ch/",
     "fapeo_page": "https://www.fapeo.ch/ape-co/voirets/"

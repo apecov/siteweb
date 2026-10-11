@@ -11,6 +11,8 @@ import mammoth from 'mammoth';
 import TurndownService from 'turndown';
 import { gfm } from '@joplin/turndown-plugin-gfm';
 import { readFrontmatter, slugify } from '../site/lib/content.mjs';
+import { geocode } from '../site/lib/geocode.mjs';
+import { ensureMapImage } from '../site/lib/staticmap.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -193,7 +195,7 @@ export function writePage({ root = ROOT, title, date, type, markdown, summary, e
   // quotes or colons cannot break the frontmatter. Empty values are left out.
   const fm = { title, date, type, category, summary: summary || summaryFrom(markdown), author: 'APECO Voirets', ...extra };
   const frontmatter = Object.entries(fm)
-    .filter(([, v]) => v !== undefined && v !== '')
+    .filter(([, v]) => v !== undefined && v !== '' && v !== null)
     .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
     .join('\n');
   mkdirSync(path.join(root, 'content', dir), { recursive: true });
@@ -229,7 +231,10 @@ export function removePreviousOutput(root, issueNumber) {
   return removed;
 }
 
-export async function processIssue(event, { root = ROOT, token, fetchDocx = download } = {}) {
+export async function processIssue(
+  event,
+  { root = ROOT, token, fetchDocx = download, geocodeAddress = geocode, fetchTileImpl } = {}
+) {
   const issue = event.issue;
   if (!issue) throw new Error("No 'issue' object in event payload");
 
@@ -257,6 +262,25 @@ export async function processIssue(event, { root = ROOT, token, fetchDocx = down
     parseDateFromString(`${title} ${markdown.slice(0, 300)}`) ||
     new Date().toISOString().slice(0, 10);
 
+  // Coordinates for the activity's map; a failed lookup only means no map.
+  const address = (form['Adresse'] || '').trim();
+  let geo = null;
+  if (address && type === 'event') {
+    try {
+      geo = await geocodeAddress(address);
+      if (!geo) console.warn(`Address not found on OpenStreetMap: ${address}`);
+    } catch (err) {
+      console.warn(`Geocoding failed: ${err.message}`);
+    }
+    if (geo) {
+      try {
+        await ensureMapImage(root, geo, { fetchTileImpl });
+      } catch (err) {
+        console.warn(`Map preview failed (the map still works on click): ${err.message}`);
+      }
+    }
+  }
+
   const file = writePage({
     root,
     title: pageTitle,
@@ -267,7 +291,8 @@ export async function processIssue(event, { root = ROOT, token, fetchDocx = down
     extra: {
       time: form['Heure'] || '',
       location: form['Lieu'] || '',
-      address: form['Adresse'] || '',
+      address,
+      geo,
       source_issue: `#${issue.number}`,
     },
   });

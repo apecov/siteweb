@@ -377,6 +377,7 @@ main.site-content {
   justify-content: center;
   gap: 0.5rem;
   padding: 0.65rem 1.4rem;
+  font-family: inherit;
   font-size: 1.1rem;
   font-weight: 700;
   border-radius: var(--radius-md);
@@ -741,6 +742,114 @@ textarea.form-control {
 .doc-meta {
   font-size: 0.9rem;
   color: var(--color-text-muted);
+}
+
+/* Activity place and OpenStreetMap map */
+.event-place {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.event-map {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  margin-top: 1rem;
+  padding: 1.5rem;
+  border: 1px dashed var(--color-border-dark);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-alt);
+  text-align: center;
+  overflow: hidden;
+}
+
+/* Static OpenStreetMap preview behind the button */
+.event-map.has-preview {
+  height: 360px;
+  border-style: solid;
+  background-size: cover;
+  background-position: center;
+}
+
+.event-map-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.event-map.has-preview .event-map-panel {
+  /* below the pin, so the marked place stays visible */
+  margin-top: 9rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  background-color: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow-md);
+}
+
+/* Marker on the centre of the preview (the image is centred on the place) */
+.event-map-pin {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 28px;
+  height: 28px;
+  margin: -28px 0 0 -14px;
+  border-radius: 50% 50% 50% 0;
+  background-color: var(--color-secondary);
+  border: 3px solid #ffffff;
+  box-shadow: var(--shadow-md);
+  transform: rotate(-45deg);
+  transform-origin: center;
+}
+
+.event-map-credit {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.75rem;
+  color: #333333;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-top-left-radius: var(--radius-sm);
+}
+
+.event-map.is-loaded {
+  padding: 0;
+  border-style: solid;
+  background-image: none !important;
+}
+
+.event-map iframe {
+  width: 100%;
+  height: 360px;
+  border: 0;
+  border-radius: var(--radius-md);
+}
+
+.event-map-note {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.event-transit {
+  margin-top: 0.75rem;
+  font-size: 0.95rem;
+}
+
+.event-map-credit a {
+  color: inherit;
+}
+
+.event-map-link {
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
 }
 
 /* 15. Site Footer */

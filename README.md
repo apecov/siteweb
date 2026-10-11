@@ -69,6 +69,7 @@ npm run build      # render the site into _site/
 npm run watch      # rebuild on every change and serve _site/ on http://localhost:3000
 npm run serve      # serve an existing _site/ build
 npm test           # build + script tests (node:test)
+npm run geocode    # add map coordinates to new activities (see "Maps")
 ```
 
 ---
@@ -114,6 +115,7 @@ date: "2025-11-20"
 time: "09h30 - 11h30"
 location: "Salle polyvalente du CO des Voirets"
 address: "Chemin des Voirets 22, 1228 Plan-les-Ouates"   # optional
+geo: { "lat": 46.172859, "lon": 6.116828 }             # added by `npm run geocode`
 performer: "Nom de l'intervenant·e"                     # optional
 co_organizers: [{ "name": "FAPEO", "url": "https://www.fapeo.ch/" }]   # optional
 type: "event"
@@ -126,9 +128,30 @@ Détails de l'événement...
 Every activity page gets a [schema.org `Event`](https://schema.org/Event) in JSON-LD in its `<head>` (`site/lib/jsonld.mjs`), so search engines and calendar tools can read it:
 
 - `startDate`/`endDate` from `date` and `time` (`19h30`, `16h00 - 18h30`), with Geneva's UTC offset for that day; the plain date when `time` is missing or free text;
-- `location` from `location`, with a structured `PostalAddress` when `address` has the form `street, NPA locality`;
+- `location` from `location`, with a structured `PostalAddress` when `address` has the form `street, NPA locality`, and `GeoCoordinates` from `geo`;
 - `organizer`: APECO Voirets plus any `co_organizers`; `performer` when given;
 - `image`: the first image of the page (e.g. the flyer), otherwise the logo; absolute URLs use `url` in `data/site.json` (`https://www.apecov.ch/`), which also gives every page its canonical URL.
+
+### Maps
+
+An activity with an `address` gets a « Lieu » section at the end of its page. With coordinates (`geo`) it also shows an [OpenStreetMap](https://www.openstreetmap.org/) map:
+
+- a **static preview** (`static/images/cartes/<lat>_<lon>-<style>.jpg`, 960×360, zoom 16) of a public-transport map, with a marker and the tile credits, shown as soon as the page opens;
+- the **interactive map**: OpenStreetMap's *Transport Map* layer, loaded only when the visitor clicks « Afficher la carte interactive », so opening a page sends nothing to a map server;
+- a « Voir sur OpenStreetMap » link (also with the Transport layer), which works without JavaScript;
+- a link to the TPG itinerary planner (`transport` in `data/site.json`) to plan the trip by public transport.
+
+The preview style is [ÖPNVKarte](https://memomaps.de/) (public transport, no key needed). With a free [Thunderforest](https://www.thunderforest.com/) API key in `THUNDERFOREST_API_KEY` (locally, and as a repository secret for the Word-document workflow), previews use Thunderforest's Transport style instead, exactly like the interactive map; a Thunderforest preview is preferred when both exist.
+
+Coordinates and previews are made once and committed, so the build never needs the network and OpenStreetMap's servers are only asked once per place (as their [tile](https://operations.osmfoundation.org/policies/tiles/) and [Nominatim](https://operations.osmfoundation.org/policies/nominatim/) usage policies require):
+
+```bash
+npm run geocode            # adds missing `geo` (from `address`) and missing map previews
+npm run geocode -- --all   # looks every address up again and redraws every preview
+THUNDERFOREST_API_KEY=… npm run geocode -- --all   # previews in the Transport style
+```
+
+Activities published from a Word document get coordinates and a preview automatically when the « Adresse » field is filled in. The build prints a warning for an activity with an address but no coordinates, or coordinates but no preview. If Nominatim finds the wrong place, correct `geo` by hand (right-click → « Show address » on openstreetmap.org gives the coordinates).
 
 ### Publishing an activity from a Word (.docx) document
 

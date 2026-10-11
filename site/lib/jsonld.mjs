@@ -62,6 +62,7 @@ export function eventJsonLd(item, site) {
     '@type': 'Place',
     name: item.location || site.contact.school_name,
     ...(item.address ? { address: postalAddress(item.address) } : {}),
+    ...(item.geo ? { geo: { '@type': 'GeoCoordinates', latitude: item.geo.lat, longitude: item.geo.lon } } : {}),
   };
   const image = firstImage(item.markdown, site);
 

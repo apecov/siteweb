@@ -4,6 +4,7 @@ date: "2026-09-21"
 time: "19h00"
 location: "Salle Rambossons, Grand-Lancy"
 address: "Chemin des Rambossons 1, 1212 Grand-Lancy"
+geo: { "lat": 46.177547, "lon": 6.120565 }
 type: "event"
 category: "Assemblée générale"
 author: "Le comité de l'APECO"

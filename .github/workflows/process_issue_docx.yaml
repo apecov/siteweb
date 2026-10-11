@@ -70,6 +70,8 @@ jobs:
         if: steps.auth.outputs.allowed == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Optional: map previews in Thunderforest's Transport style (else ÖPNVKarte).
+          THUNDERFOREST_API_KEY: ${{ secrets.THUNDERFOREST_API_KEY }}
         run: node scripts/process-issue-docx.mjs --event-path "$GITHUB_EVENT_PATH"
 
       # Check that the site still builds with the new page before pushing it.
@@ -90,8 +92,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           # -A also stages the page and images an earlier version of this
-          # issue produced and the script removed.
-          git add -A -- content static/images/documents
+          # issue produced and the script removed; cartes/ holds the map preview.
+          git add -A -- content static/images/documents static/images/cartes
           if git diff --cached --quiet; then
             echo "Page already up to date."
             exit 0

@@ -113,12 +113,22 @@ title: "Café des parents"
 date: "2025-11-20"
 time: "09h30 - 11h30"
 location: "Salle polyvalente du CO des Voirets"
+address: "Chemin des Voirets 22, 1228 Plan-les-Ouates"   # optional
+performer: "Nom de l'intervenant·e"                     # optional
+co_organizers: [{ "name": "FAPEO", "url": "https://www.fapeo.ch/" }]   # optional
 type: "event"
 summary: "Moment d'échange sur les devoirs et le rythme scolaire."
 ---
 
 Détails de l'événement...
 ```
+
+Every activity page gets a [schema.org `Event`](https://schema.org/Event) in JSON-LD in its `<head>` (`site/lib/jsonld.mjs`), so search engines and calendar tools can read it:
+
+- `startDate`/`endDate` from `date` and `time` (`19h30`, `16h00 - 18h30`), with Geneva's UTC offset for that day; the plain date when `time` is missing or free text;
+- `location` from `location`, with a structured `PostalAddress` when `address` has the form `street, NPA locality`;
+- `organizer`: APECO Voirets plus any `co_organizers`; `performer` when given;
+- `image`: the first image of the page (e.g. the flyer), otherwise the logo; absolute URLs use `url` in `data/site.json` (`https://www.apecov.ch/`), which also gives every page its canonical URL.
 
 ### Publishing an activity from a Word (.docx) document
 

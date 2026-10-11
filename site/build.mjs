@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import MarkdownIt from 'markdown-it';
 import { escapeHtml, loadCollection, readFrontmatter } from './lib/content.mjs';
+import { eventJsonLd, jsonLdScript } from './lib/jsonld.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const ROOT = path.resolve(__dirname, '..');
@@ -194,14 +195,16 @@ function renderNav(site, currentNav, base) {
     .join('\n');
 }
 
-function renderLayout(layout, { site, out, nav, title, description, content, year }) {
+function renderLayout(layout, { site, out, nav, title, description, content, year, head = '' }) {
   const base = depthPrefix(out);
   const fullTitle = `${title ? `${title} - ` : ''}${site.title} | ${site.full_title}`;
   const html = fillSiteValues(layout, site)
     .replaceAll('{{TITLE}}', escapeHtml(fullTitle))
     .replaceAll('{{DESCRIPTION}}', escapeHtml(description || site.description))
     .replaceAll('{{BASE}}', base)
+    .replaceAll('{{URL}}', escapeHtml(new URL(out === 'index.html' ? '' : out, site.url).href))
     .replaceAll('{{YEAR}}', String(year))
+    .replace('{{HEAD}}', () => head)
     .replace('{{NAV}}', renderNav(site, nav, base))
     .replace('{{CONTENT}}', () => content);
   const bodyStart = html.indexOf('<body>');
@@ -300,6 +303,7 @@ export function build({ root = ROOT, outDir = path.join(root, '_site'), today } 
           description: item.summary,
           content: renderDetail(mdContent, item, collection, base),
           year,
+          head: collection === 'events' ? jsonLdScript(eventJsonLd(item, site)) : '',
         })
       );
     }

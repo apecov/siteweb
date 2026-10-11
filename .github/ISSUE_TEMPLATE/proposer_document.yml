@@ -46,6 +46,13 @@ body:
       description: Facultatif.
       placeholder: "Préau du CO des Voirets"
 
+  - type: input
+    id: event_address
+    attributes:
+      label: Adresse
+      description: "Facultatif : rue, numéro, NPA et localité. Elle aide les moteurs de recherche et les agendas à situer l'activité."
+      placeholder: "Chemin des Voirets 22, 1228 Plan-les-Ouates"
+
   - type: textarea
     id: summary
     attributes:

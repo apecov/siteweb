@@ -264,7 +264,12 @@ export async function processIssue(event, { root = ROOT, token, fetchDocx = down
     type,
     markdown,
     summary: (form['Résumé'] || '').replace(/\s+/g, ' ').trim(),
-    extra: { time: form['Heure'] || '', location: form['Lieu'] || '', source_issue: `#${issue.number}` },
+    extra: {
+      time: form['Heure'] || '',
+      location: form['Lieu'] || '',
+      address: form['Adresse'] || '',
+      source_issue: `#${issue.number}`,
+    },
   });
   const page = file.replace(/^content[\\/]/, '').replace(/\.md$/, '.html').split(path.sep).join('/');
   return { file, page, type, title: pageTitle, issueNumber: issue.number };

@@ -6,6 +6,7 @@ import path from 'node:path';
 import JSZip from 'jszip';
 import { build, ROOT } from '../site/build.mjs';
 import { slugify, formatFrenchDate } from '../site/lib/content.mjs';
+import { eventDates, postalAddress } from '../site/lib/jsonld.mjs';
 import {
   convertDocxToMarkdown,
   detectDocumentType,
@@ -247,12 +248,13 @@ test('processIssue writes a page from the form answers', async (t) => {
 });
 
 /** The body of the issue form, as GitHub renders it. */
-function formBody({ type = 'Activité', date = '11.12.2026', time = '', location = '', summary = '' } = {}) {
+function formBody({ type = 'Activité', date = '11.12.2026', time = '', location = '', address = '', summary = '' } = {}) {
   return [
     ['Type de document', type],
     ['Date', date],
     ['Heure', time],
     ['Lieu', location],
+    ['Adresse', address],
     ['Résumé', summary],
     ['Document Word (.docx)', '[annonce.docx](https://github.com/user-attachments/files/123/annonce.docx)'],
   ]
@@ -268,7 +270,7 @@ test('a Word announcement becomes an activity page', async (t) => {
     number: 42,
     title: "[Publication] : Stand de l'Escalade 2026",
     labels: [],
-    body: formBody({ time: '16h00', location: 'Préau du CO des Voirets' }),
+    body: formBody({ time: '16h00', location: 'Préau du CO des Voirets', address: 'Chemin des Voirets 22, 1228 Plan-les-Ouates' }),
   };
   const result = await processIssue({ issue }, { root, fetchDocx: async () => ANNONCE });
   assert.equal(result.type, 'event');
@@ -279,6 +281,7 @@ test('a Word announcement becomes an activity page', async (t) => {
   assert.equal(data.date, '2026-12-11');
   assert.equal(data.time, '16h00');
   assert.equal(data.location, 'Préau du CO des Voirets');
+  assert.equal(data.address, 'Chemin des Voirets 22, 1228 Plan-les-Ouates');
   assert.equal(data.source_issue, '#42');
   // Salutation skipped; first real sentence used.
   assert.match(data.summary, /^L'APECO Voirets tiendra un stand/);
@@ -330,4 +333,76 @@ test('the published activity page renders the table and image', async (t) => {
 test('Word tables without header row, multi-paragraph cells', () => {
   const md = htmlToMarkdown('<table><tr><td><p>A</p></td><td><p>B</p></td></tr><tr><td><p>1</p><p>2</p></td><td><p>x</p></td></tr></table>');
   assert.equal(md.replace(/ +\|/g, ' |'), '| A | B |\n| --- | --- |\n| 1 2 | x |');
+});
+
+function jsonLd(html) {
+  const m = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+  return m ? JSON.parse(m[1]) : null;
+}
+
+test('activity pages carry schema.org Event JSON-LD in the head', (t) => {
+  const root = fixtureRoot(t);
+  writeFileSync(
+    path.join(root, 'content/evenements/2026-01-19-table-ronde.md'),
+    [
+      '---',
+      'title: "Table ronde </script><b>"',
+      'date: "2026-01-19"',
+      'time: "19h30 - 21h"',
+      'location: "MQ sous l\'Étoile"',
+      'address: "Avenue des Communes-Réunies 73, 1212 Grand-Lancy"',
+      'performer: "Marc-André Müller"',
+      'co_organizers: [{ "name": "FAPEO", "url": "https://www.fapeo.ch/" }]',
+      'summary: "Rencontre."',
+      '---',
+      '',
+      '![Affiche](static/images/evenements/affiche.jpg)',
+      '',
+    ].join('\n')
+  );
+  const out = path.join(root, '_site');
+  build({ root, outDir: out, today: '2026-10-11' });
+  const html = readFileSync(path.join(out, 'evenements/2026-01-19-table-ronde.html'), 'utf8');
+  const head = html.slice(0, html.indexOf('</head>'));
+  assert.equal((head.match(/application\/ld\+json/g) || []).length, 1, 'JSON-LD is in the head');
+  assert.doesNotMatch(head, /<\/script><b>/, 'values cannot close the script element');
+
+  const data = jsonLd(head);
+  assert.equal(data['@context'], 'https://schema.org');
+  assert.equal(data['@type'], 'Event');
+  assert.equal(data.name, 'Table ronde </script><b>');
+  assert.equal(data.startDate, '2026-01-19T19:30:00+01:00');
+  assert.equal(data.endDate, '2026-01-19T21:00:00+01:00');
+  assert.deepEqual(data.location, {
+    '@type': 'Place',
+    name: "MQ sous l'Étoile",
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: 'Avenue des Communes-Réunies 73',
+      postalCode: '1212',
+      addressLocality: 'Grand-Lancy',
+      addressRegion: 'GE',
+      addressCountry: 'CH',
+    },
+  });
+  assert.deepEqual(data.organizer.map((o) => o.name), ['APECO Voirets', 'FAPEO']);
+  assert.equal(data.performer.name, 'Marc-André Müller');
+  assert.equal(data.image, 'https://www.apecov.ch/static/images/evenements/affiche.jpg');
+  assert.equal(data.url, 'https://www.apecov.ch/evenements/2026-01-19-table-ronde.html');
+  assert.match(head, /<link rel="canonical" href="https:\/\/www\.apecov\.ch\/evenements\/2026-01-19-table-ronde\.html">/);
+
+  // Only activity pages: not the PV, not the top-level pages.
+  assert.equal(jsonLd(readFileSync(path.join(out, 'pv/2025-08-25-pv.html'), 'utf8')), null);
+  assert.equal(jsonLd(readFileSync(path.join(out, 'activites.html'), 'utf8')), null);
+});
+
+test('event times and addresses', () => {
+  assert.deepEqual(eventDates('2026-07-01', '16h00 - 18h30'), {
+    startDate: '2026-07-01T16:00:00+02:00',
+    endDate: '2026-07-01T18:30:00+02:00',
+  });
+  assert.deepEqual(eventDates('2026-12-11', '9h'), { startDate: '2026-12-11T09:00:00+01:00' });
+  assert.deepEqual(eventDates('2026-12-11', 'en soirée'), { startDate: '2026-12-11' });
+  assert.deepEqual(eventDates('2026-12-11', ''), { startDate: '2026-12-11' });
+  assert.equal(postalAddress('Rue sans NPA').streetAddress, 'Rue sans NPA');
 });

@@ -6,7 +6,9 @@ description: "Statuts officiels et procès-verbaux de l'APECO Voirets."
 <div style="margin-bottom: 2rem;">
 <h1>Statuts et procès-verbaux d'assemblée générale</h1>
 <p style="font-size: 1.2rem; color: var(--color-text-muted);">
-L'Association des parents d'élèves du cycle d'orientation des Voirets (APECO Voirets) est régie par les articles 60 et suivants du Code civil suisse.
+ASSOCIATION DES PARENTS D'ELEVES DU CYCLE D'ORIENTATION DES VOIRETS<br/>
+APECO VOIRETS<br/>
+STATUTS
 </p>
 </div>
 <div class="grid-sidebar">
@@ -22,10 +24,6 @@ L'Association des parents d'élèves du cycle d'orientation des Voirets (APECO V
 <a href="{{BASE}}static/docs/Statuts_APECO_Voirets_Aout_2025.pdf" class="btn btn-primary" download>⬇️ Télécharger le PDF</a>
 </div>
 <article class="markdown-body" style="margin-top: 1.5rem;">
-
-## Statuts officiels de l'APECO VOIRETS
-
-*Adoptés en Assemblée générale constitutive le 25 août 2025.*
 
 ### Dénomination
 
@@ -45,11 +43,7 @@ L'Association des parents d'élèves du cycle d'orientation des Voirets (APECO V
 
 ### Organes
 
-**Art. 5 :** Les organes de l’APECO Voirets sont :
-
-- L'assemblée générale ;
-- Le comité ;
-- Le(s) vérificateur(s) des comptes.
+**Art. 5 :** Les organes de l’APECO Voirets sont L'assemblée générale,  Le comité, Le(s) vérificateur(s) des comptes.
 
 ### Membres et admission
 
@@ -63,7 +57,9 @@ La qualité de membre est acquise dès le paiement de la cotisation, qui est val
 
 En cas de non-paiement de la cotisation par un membre (et après un courriel de rappel), ce membre sera considéré comme démissionnaire.
 
-Un membre peut démissionner en tout temps. Un membre qui porte préjudice aux intérêts ou à la réputation de l'APECO Voirets, ou abuse de sa qualité de membre, peut être exclu.
+Un membre peut démissionner en tout temps. 
+
+Un membre qui porte préjudice aux intérêts ou à la réputation de l'APECO Voirets, ou abuse de sa qualité de membre, peut être exclu.
 
 ### Assemblée générale
 
@@ -75,15 +71,23 @@ Chaque membre a une voix, les décisions sont prises à la majorité simple, à 
 
 Les membres du Comité n'ont pas le droit de vote pour la décharge des activités de l'APECO Voirets. Ils peuvent cependant se prononcer sur les autres sujets.
 
-L'AG élit le Comité ainsi que le(s) vérificateur(s) des comptes. L'AG approuve les rapports d'activités du/de la trésorier/ère et des vérificateurs des comptes et leur en donne décharge. L'AG fixe le montant des cotisations. L'AG se prononce sur les recours d'exclusion d'un membre pour de justes motifs. L'AG se prononce sur la modification des statuts à une majorité des 2/3 des membres présents. L'AG peut décider de la dissolution de l'APECO Voirets par ¾ des membres.
+L'AG élit le Comité ainsi que le(s) vérificateur(s) des comptes. 
+
+L'AG approuve les rapports d'activités du/de la trésorier/ère et des vérificateurs des comptes et leur en donne décharge. 
+
+L'AG fixe le montant des cotisations. 
+
+L'AG se prononce sur les recours d'exclusion d'un membre pour de justes motifs. 
+
+L'AG se prononce sur la modification des statuts à une majorité des 2/3 des membres présents. 
+
+L'AG peut décider de la dissolution de l'APECO Voirets par ¾ des membres.
 
 ### Comité
 
 **Art. 8 :** Le comité est formé de 3 à 15 membres élus pour une année par l'assemblée générale. Il répartit les différentes charges qui lui incombent en s’entourant, au besoin, de toute personne utile. La présidence peut être partagée par deux co-président-e-s. Le comité se réunit selon les nécessités, mais au moins 4 fois par année scolaire. Les séances du Comité sont ouvertes à tous les membres. Si nécessaire, le Comité peut aussi accepter des nouveaux membres en cours de mandat.
 
 Le Comité est compétent pour toutes les affaires ne relevant pas expressément des compétences de l'AG et entrant dans le cadre des buts déterminés sous l'article 2. Les décisions du comité sont prises à la majorité des membres présents. En cas d'égalité des voix, celle du (de la) président(e) compte double. En cas d'égalité s’il y a deux co-président-e-s, la décision sera remise à la prochaine séance.
-
-*Note : texte tel qu'adopté ; les buts de l'association figurent à l'article 4.*
 
 ### Démission du comité
 
@@ -103,14 +107,15 @@ Le Comité est compétent pour toutes les affaires ne relevant pas expressément
 
 ### Ressources
 
-**Art. 13 :** Les recettes de l'association se composent des cotisations annuelles, de subventions, de dons, legs ou du produit de manifestations qu'elle pourrait organiser ou auxquelles elle pourrait participer. La cotisation est fixée par l'AG (**20.- CHF actuellement**), elle est due pour une année scolaire et elle n'est pas remboursable.
+**Art. 13 :** Les recettes de l'association se composent des cotisations annuelles, de subventions, de dons, legs ou du produit de manifestations qu'elle pourrait organiser ou auxquelles elle pourrait participer. La cotisation est fixée par l'AG (20.- CHF actuellement), elle est due pour une année scolaire et elle n'est pas remboursable.
 
 ### Modification des statuts - Dissolution
 
 **Art. 14 :** Toute décision relative à la modification des statuts ou à la dissolution de l'association ne sera valable que si elle est prise à la majorité des membres présents à l'assemblée. En cas de dissolution, l'assemblée décidera du mode de liquidation. L'actif éventuel de l'association devra être affecté à une œuvre d'utilité publique se proposant d'atteindre des buts analogues ou congelé dans un compte postal/bancaire pour pouvoir être à nouveau versé au Comité de l'APECO Voirets en cas de mise en veille de l'association.
 
-> Les présents statuts ont été approuvés par l'Assemblée générale constitutive du 25 août 2025 par 4 votes pour, 0 contre et 0 abstention à Lancy (Genève).
+Les présents statuts ont été approuvés par l'Assemblée générale constitutive du 25 août 2025 par 4 votes pour, 0 contre et 0 abstention à Lancy (Genève).
 
+Lancy, 25.08.2025
 </article>
 </div>
 <div>

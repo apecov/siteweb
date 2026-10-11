@@ -11,7 +11,17 @@ L'Association des parents d'élèves du cycle d'orientation des Voirets (APECO V
 </div>
 <div class="grid-sidebar">
 <div>
-<article class="markdown-body">
+<div class="doc-card" style="border: 2px solid var(--color-primary); background-color: var(--color-primary-light);">
+<div class="doc-info">
+<div class="doc-icon">PDF</div>
+<div>
+<div class="doc-title">Statuts APECO Voirets (août 2025)</div>
+<div class="doc-meta">Document adopté par l'Assemblée générale constitutive du 25 août 2025 à Lancy (signatures masquées)</div>
+</div>
+</div>
+<a href="{{BASE}}static/docs/Statuts_APECO_Voirets_Aout_2025.pdf" class="btn btn-primary" download>⬇️ Télécharger le PDF</a>
+</div>
+<article class="markdown-body" style="margin-top: 1.5rem;">
 
 ## Statuts officiels de l'APECO VOIRETS
 

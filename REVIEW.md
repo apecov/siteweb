@@ -16,7 +16,7 @@ Done:
   - The broken ge.ch link and the unverified TPG lines.
   - The "Membre affilié de la FAPEO" claim.
   - The invented PV, and all sample events, news and Instagram posts.
-  - The signed statutes PDF, both copies.
+  - The signatures in the statutes PDF: they are masked, the redacted PDF is downloadable again, and the git history was rewritten so that no commit contains the signed scan.
   - The generated logo and favicon. The real logo `logo-apecov.jpg` is used instead.
   - The whole Instagram integration (script, workflow, data, page sections, CSS, README).
 - **Statutes**: Art. 7 now says ¾, and Art. 8 now says "article 2" (as adopted), followed by a short note.
@@ -41,7 +41,6 @@ Done:
 Still open (needs the committee or a decision):
 - Confirm that `apeco-voirets@fapeo.ch` reaches the committee, and the association's postal address (FAPEO lists Chemin des Fraisiers 13, Grand-Lancy).
 - The real PV of the constitutive AG, real events and news.
-- An unsigned version of the statutes for download, if wanted. The signed scan is still in the git history (commit `d0f1b4e`); if the repository is public, removing it from history needs a rewrite.
 - The Art. 7 / Art. 14 contradiction in the statutes (for the next AG).
 - Which language the developer docs use (AGENTS.md vs README).
 - Not done: a PR-based docx flow (needed only if branch protection is enabled), `404.html` (relative links need the final URL), sitemap and CNAME, and the `npm audit` warnings from gray-matter and mammoth (build-time only).

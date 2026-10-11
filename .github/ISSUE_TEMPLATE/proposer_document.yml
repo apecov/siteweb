@@ -14,11 +14,10 @@ body:
     id: doc_type
     attributes:
       label: Type de document
-      description: Choisissez si ce document annonce un événement, rend compte d'une réunion passée ou est une actualité.
+      description: Choisissez si ce document annonce un événement ou rend compte d'une réunion passée.
       options:
         - "Événement à venir"
         - "Procès-verbal / Compte-rendu de réunion"
-        - "Actualité / Article général"
     validations:
       required: true
 

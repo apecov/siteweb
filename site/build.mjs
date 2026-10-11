@@ -10,7 +10,6 @@ export const ROOT = path.resolve(__dirname, '..');
 // Content collections: `content/<dir>/*.md` -> `<dir>/<slug>.html`, each
 // detail page highlighting `nav` in the header and linking back to it.
 const COLLECTIONS = {
-  news: { dir: 'nouvelles', type: 'news', nav: 'nouvelles.html', back: 'Retour aux actualités' },
   events: { dir: 'evenements', type: 'event', nav: 'activites.html', back: 'Retour aux activités' },
   reports: { dir: 'pv', type: 'pv', nav: 'statuts.html', back: 'Retour aux statuts et PV' },
 };
@@ -31,7 +30,7 @@ function buildMarkdownRenderer({ html }) {
 
   // Content is written with links relative to the site root (`statuts.html`,
   // `static/docs/x.pdf`) wherever the page ends up; rewrite them against
-  // `env.base` so they also work from `nouvelles/…` and under the GitHub
+  // `env.base` so they also work from `evenements/…` and under the GitHub
   // Pages project path.
   md.core.ruler.push('site_relative_links', (state) => {
     const base = state.env.base || '';
@@ -71,10 +70,19 @@ function fillSiteValues(text, site) {
 // Emoji used as icons are decorative: hide them from screen readers. Only
 // text between tags is touched, never attribute values.
 const EMOJI = /(?:\p{Regional_Indicator}{2}|\p{Extended_Pictographic}\uFE0F?(?:\u200D\p{Extended_Pictographic}\uFE0F?)*)/gu;
-function hideEmoji(html) {
-  return html.replace(/>([^<]+)</g, (whole, text) =>
-    `>${text.replace(EMOJI, (e) => `<span aria-hidden="true">${e}</span>`)}<`
-  );
+function hideEmoji(text) {
+  return text.replace(EMOJI, (e) => `<span aria-hidden="true">${e}</span>`);
+}
+
+// French typography: the space before ! ? ; : and » (and after «) must not
+// break, or the punctuation can wrap onto a line of its own.
+function frenchSpaces(text) {
+  return text.replace(/ ([!?;:»])/g, '\u00a0$1').replace(/« /g, '«\u00a0');
+}
+
+/** Applies the text-only fixes above to text between tags, never to attributes. */
+function polishText(html) {
+  return html.replace(/>([^<]+)</g, (whole, text) => `>${frenchSpaces(hideEmoji(text))}<`);
 }
 
 /** Replaces `{{name}}` with pre-rendered HTML components. */
@@ -126,43 +134,26 @@ function pastEventCard(event, base) {
 </div>`;
 }
 
-function newsMeta(post, { withAuthor, categoryBadge = 'badge-green' }) {
-  const meta = [`<span class="badge badge-blue">${escapeHtml(post.dateFormatted)}</span>`];
-  if (post.category) meta.push(`<span class="badge ${categoryBadge}">${escapeHtml(post.category)}</span>`);
-  if (withAuthor && post.author) meta.push(`<span>Par ${escapeHtml(post.author)}</span>`);
-  return `<div class="card-meta">${meta.join(' ')}</div>`;
-}
-
-function newsCard(post, base, { heading, withAuthor, categoryBadge, linkLabel }) {
-  const href = base + post.out;
-  return `<article class="card">
-  ${newsMeta(post, { withAuthor, categoryBadge })}
-  <${heading} class="card-title"><a href="${href}">${escapeHtml(post.title)}</a></${heading}>
-  <p>${escapeHtml(post.summary)}</p>
-  <div style="margin-top: 1rem;"><a href="${href}" class="btn btn-outline btn-sm">${linkLabel} &rarr;</a></div>
-</article>`;
-}
-
 function emptyCard(text) {
   return `<div class="card"><p>${text}</p></div>`;
 }
 
 function buildComponents(data, base) {
-  const { news, upcoming, past, reports } = data;
+  const { upcoming, past, reports } = data;
   return {
     upcoming_events_home: upcoming.length
       ? upcoming
           .slice(0, 3)
           .map((e) => eventCard(e, base, { showLocation: true, showTime: true, linkLabel: 'En savoir plus' }))
           .join('\n')
-      : emptyCard('Aucun événement programmé pour le moment. Consultez nos actualités ou contactez le comité !'),
+      : emptyCard('Aucun événement programmé pour le moment. Contactez le comité pour proposer une idée !'),
 
-    latest_news_home: news.length
-      ? news
+    past_events_home: past.length
+      ? past
           .slice(0, 3)
-          .map((p) => newsCard(p, base, { heading: 'h3', withAuthor: false, categoryBadge: 'badge-orange', linkLabel: 'Lire la suite' }))
+          .map((e) => eventCard(e, base, { showLocation: true, showTime: false, linkLabel: "Voir l'événement" }))
           .join('\n')
-      : emptyCard('Aucune actualité publiée pour le moment.'),
+      : emptyCard('Aucune activité passée pour le moment.'),
 
     upcoming_events: upcoming.length
       ? `<div class="grid-2">\n${upcoming.map((e) => upcomingEventCard(e, base)).join('\n')}\n</div>`
@@ -175,12 +166,6 @@ function buildComponents(data, base) {
           .map((e) => pastEventCard(e, base))
           .join('\n')}\n</div>\n</section>`
       : '',
-
-    news_list: news.length
-      ? `<div style="display: flex; flex-direction: column; gap: 1.5rem;">\n${news
-          .map((p) => newsCard(p, base, { heading: 'h2', withAuthor: true, linkLabel: "Lire l'article complet" }))
-          .join('\n')}\n</div>`
-      : emptyCard('Aucun article publié pour le moment.'),
 
     meeting_reports: reports.length
       ? reports
@@ -220,40 +205,27 @@ function renderLayout(layout, { site, out, nav, title, description, content, yea
     .replace('{{NAV}}', renderNav(site, nav, base))
     .replace('{{CONTENT}}', () => content);
   const bodyStart = html.indexOf('<body>');
-  return html.slice(0, bodyStart) + hideEmoji(html.slice(bodyStart));
+  return html.slice(0, bodyStart) + polishText(html.slice(bodyStart));
 }
 
-function detailHeader(item, collection) {
+function detailHeader(item) {
   const meta = [`<span class="badge badge-blue">${escapeHtml(item.dateFormatted)}</span>`];
-  if (collection === 'news') {
-    if (item.category) meta.push(`<span class="badge badge-green">${escapeHtml(item.category)}</span>`);
-    if (item.author) meta.push(`<span>Par ${escapeHtml(item.author)}</span>`);
-  } else {
-    if (item.location) meta.push(`<span>📍 ${escapeHtml(item.location)}</span>`);
-    if (item.category) meta.push(`<span class="badge badge-green">${escapeHtml(item.category)}</span>`);
-  }
+  if (item.location) meta.push(`<span>📍 ${escapeHtml(item.location)}</span>`);
+  if (item.category) meta.push(`<span class="badge badge-green">${escapeHtml(item.category)}</span>`);
   return `<div style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--color-border); padding-bottom: 1rem;">
   <div class="card-meta">${meta.join(' ')}</div>
   <h1 style="border-bottom: none; margin-bottom: 0.5rem; margin-top: 0.5rem;">${escapeHtml(item.title)}</h1>
 </div>`;
 }
 
-function renderDetail(md, item, collection, base, site) {
+function renderDetail(md, item, collection, base) {
   const { nav, back } = COLLECTIONS[collection];
   const body = md.render(item.markdown, { base });
-  const footer =
-    collection === 'news'
-      ? `<div style="margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-  <a href="${base}nouvelles.html" class="btn btn-outline btn-sm">&larr; Retour à la liste</a>
-  <a href="${base}adhesion.html" class="btn btn-secondary btn-sm">Rejoindre l'APECO (${escapeHtml(site.membership.annual_fee_chf)} CHF) &rarr;</a>
-</div>`
-      : '';
   return `<div class="container">
   <div style="margin-bottom: 1.5rem;"><a href="${base}${nav}" style="font-weight: 700;">&larr; ${escapeHtml(back)}</a></div>
   <article class="markdown-body">
-${detailHeader(item, collection)}
+${detailHeader(item)}
 ${body}
-${footer}
   </article>
 </div>`;
 }
@@ -286,7 +258,6 @@ export function build({ root = ROOT, outDir = path.join(root, '_site'), today } 
     Object.entries(COLLECTIONS).map(([key, c]) => [key, loadCollection(root, c.dir, c.type)])
   );
   const data = {
-    news: items.news,
     reports: items.reports,
     upcoming: items.events.filter((e) => e.date >= today).reverse(), // soonest first
     past: items.events.filter((e) => e.date < today),
@@ -326,7 +297,7 @@ export function build({ root = ROOT, outDir = path.join(root, '_site'), today } 
           nav: COLLECTIONS[collection].nav,
           title: item.title,
           description: item.summary,
-          content: renderDetail(mdContent, item, collection, base, site),
+          content: renderDetail(mdContent, item, collection, base),
           year,
         })
       );

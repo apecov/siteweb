@@ -27,7 +27,7 @@ const FIXTURES = {
     '---\ntitle: "Café des parents"\ndate: "2025-11-15"\nlocation: "Salle polyvalente"\nsummary: "Rencontre."\n---\n\nTexte.\n',
   'content/evenements/2025-12-05-escalade.md':
     '---\ntitle: "Stand de l\'Escalade"\ndate: "2025-12-05"\nsummary: "Stand."\n---\n\nTexte.\n',
-  'content/nouvelles/2025-08-25-ag.md':
+  'content/evenements/2025-08-25-ag.md':
     '---\ntitle: "Assemblée générale"\ndate: "2025-08-25"\nsummary: "Résumé."\n---\n\nVoir les [statuts](statuts.html).\n\n<script>alert(1)</script>\n',
   'content/pv/2025-08-25-pv.md': '---\ntitle: "PV de l\'AG"\ndate: "2025-08-25"\nsummary: "PV."\n---\n\nTexte du PV.\n',
 };
@@ -84,15 +84,15 @@ async function minimalDocx(paragraphs) {
 test('the real site builds without sample content', (t) => {
   const out = tempDir(t);
   build({ outDir: out, today: '2025-10-01' });
-  for (const page of ['index.html', 'statuts.html', 'activites.html', 'adhesion.html', 'contact.html', 'nouvelles.html']) {
+  for (const page of ['index.html', 'statuts.html', 'activites.html', 'adhesion.html', 'contact.html']) {
     assert.ok(statSync(path.join(out, page)).size > 0, `${page} is not empty`);
   }
   for (const asset of ['static/css/style.css', 'static/js/main.js', 'static/images/logo-apecov.jpg', 'static/fonts/alegreya-sans-latin-400-normal.woff2', '.nojekyll']) {
     assert.ok(existsSync(path.join(out, asset)), `${asset} exists`);
   }
   const statuts = readFileSync(path.join(out, 'statuts.html'), 'utf8');
-  assert.match(statuts, /Art\. 1 :/);
-  assert.match(statuts, /Art\. 14 :/);
+  assert.match(statuts, /Art\. 1\s:/);
+  assert.match(statuts, /Art\. 14\s:/);
   assert.match(statuts, /par ¾ des membres/);
 });
 
@@ -109,6 +109,17 @@ test('build renders pages and collection items', (t) => {
   assert.match(read('pv/2025-08-25-pv.html'), /Texte du PV/);
 });
 
+test('there is no news section; the home page lists recent activities', (t) => {
+  const root = fixtureRoot(t);
+  const out = path.join(root, '_site');
+  build({ root, outDir: out, today: '2026-01-01' });
+  assert.ok(!existsSync(path.join(out, 'nouvelles.html')));
+  const index = readFileSync(path.join(out, 'index.html'), 'utf8');
+  assert.doesNotMatch(index, /nouvelles\.html|Actualités/);
+  const [, recent] = index.split('Activités récentes');
+  assert.match(recent, /Stand de l'Escalade/);
+});
+
 test('upcoming and past events are split on the build date', (t) => {
   const read = buildFixture(t, { today: '2025-12-01' });
   const [upcoming, past] = read('activites.html').split('Activités passées');
@@ -117,14 +128,14 @@ test('upcoming and past events are split on the build date', (t) => {
 });
 
 test('links in collection pages resolve from their subdirectory', (t) => {
-  const html = buildFixture(t)('nouvelles/2025-08-25-ag.html');
+  const html = buildFixture(t)('evenements/2025-08-25-ag.html');
   assert.match(html, /href="\.\.\/statuts\.html"/);
   assert.match(html, /href="\.\.\/static\/css\/style\.css"/);
   assert.doesNotMatch(html, /href="\/static/);
 });
 
 test('raw HTML in content is escaped', (t) => {
-  const html = buildFixture(t)('nouvelles/2025-08-25-ag.html');
+  const html = buildFixture(t)('evenements/2025-08-25-ag.html');
   assert.doesNotMatch(html, /<script>alert/);
   assert.match(html, /&lt;script&gt;alert/);
 });
@@ -147,6 +158,12 @@ test('decorative emoji are hidden from screen readers', (t) => {
   const index = buildFixture(t)('index.html');
   assert.match(index, /<span aria-hidden="true">🤝<\/span>/);
   assert.match(index, /<span aria-hidden="true">🇨🇭<\/span>/);
+});
+
+test('French punctuation gets a non-breaking space', (t) => {
+  const index = buildFixture(t)('index.html');
+  assert.match(index, /Rejoignez l'APECO\u00a0!/);
+  assert.doesNotMatch(index, / [!?;:]</);
 });
 
 test('slugify and French dates', () => {
@@ -172,7 +189,6 @@ test('document classification', () => {
   assert.equal(detectDocumentType('Divers', ['pv'], ''), 'pv');
   assert.equal(typeFromFormAnswer('Procès-verbal / Compte-rendu de réunion'), 'pv');
   assert.equal(typeFromFormAnswer('Événement à venir'), 'event');
-  assert.equal(typeFromFormAnswer('Actualité / Article général'), 'news');
 });
 
 test('issue form parsing and attachment links', () => {

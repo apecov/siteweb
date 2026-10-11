@@ -1,5 +1,5 @@
 // Converts a Word document (.docx) attached to a GitHub issue into a Markdown
-// page under content/evenements/, content/pv/ or content/nouvelles/.
+// page under content/evenements/ or content/pv/.
 //
 //   node scripts/process-issue-docx.mjs --event-path "$GITHUB_EVENT_PATH"
 //   node scripts/process-issue-docx.mjs --file doc.docx --title "Titre" --type event --date 2025-11-20
@@ -16,7 +16,6 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const TARGETS = {
   event: { dir: 'evenements', category: 'Événements' },
   pv: { dir: 'pv', category: 'PV AG' },
-  news: { dir: 'nouvelles', category: 'Actualités' },
 };
 
 // Attachments are only downloaded from GitHub itself, so an issue cannot make
@@ -55,12 +54,11 @@ export function extractDocxUrls(text) {
   return results;
 }
 
-/** Maps the issue form's "Type de document" answer to event / pv / news. */
+/** Maps the issue form's "Type de document" answer to event / pv. */
 export function typeFromFormAnswer(answer) {
   const a = String(answer || '').toLowerCase();
   if (a.startsWith('événement') || a.startsWith('evenement')) return 'event';
   if (a.startsWith('procès-verbal') || a.startsWith('proces-verbal')) return 'pv';
-  if (a.startsWith('actualité') || a.startsWith('actualite')) return 'news';
   return null;
 }
 
@@ -72,7 +70,6 @@ export function detectDocumentType(title, labels, text) {
 
   if (lbls.some((l) => ['event', 'evenement', 'activité', 'activite'].includes(l))) return 'event';
   if (lbls.some((l) => ['pv', 'meeting-report', 'compte-rendu', 'proces-verbal'].includes(l))) return 'pv';
-  if (lbls.some((l) => ['nouvelle', 'news', 'actualite', 'actualité'].includes(l))) return 'news';
 
   const has = (s, words) => words.some((w) => s.includes(w));
   if (has(t, ['procès-verbal', 'proces-verbal', 'pv ', 'pv:', 'compte-rendu', 'cr de réunion', 'assemblée générale'])) return 'pv';

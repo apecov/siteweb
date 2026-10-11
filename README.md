@@ -16,15 +16,14 @@ The site is built with a small Node.js build script (`markdown-it` plus plain HT
 - **Markdown-Driven:** Announcements, upcoming activities and meeting minutes are Markdown files with frontmatter.
 - **FAPEO-Inspired Styling:** Clean typography (`Alegreya Sans`, self-hosted in `static/fonts/`), signature blue (`#008ac5`) and green (`#9ac331`) palette, custom bullet points, and responsive card layouts.
 - **Association Sections:**
-  - **Accueil (Home):** Welcome message, core pillars, latest news and upcoming events.
+  - **Accueil (Home):** Welcome message, core pillars, upcoming and recent activities.
   - **Statuts et PV:** The 14 articles of the APECO Voirets statutes adopted on 25 August 2025, and the archive of General Assembly minutes (PV).
   - **Activités:** Overview and dates of parents' cafés, roundtables and other events.
   - **Devenir membre:** Membership form that prepares an e-mail to the committee (the fee comes from `data/site.json`).
-  - **Actualités:** Chronological news feed.
   - **Contact:** Coordinates and contact form.
 - **Word Document (.docx) Automation via GitHub Issues:**
   - Create a GitHub issue using the provided template and attach a `.docx` file.
-  - GitHub Actions runs `scripts/process-issue-docx.mjs`, converts the document with `mammoth` + `turndown` into Markdown with frontmatter, files it as an event, meeting report (PV) or news item according to the form, commits it, redeploys the site and comments back on the issue.
+  - GitHub Actions runs `scripts/process-issue-docx.mjs`, converts the document with `mammoth` + `turndown` into Markdown with frontmatter, files it as an event or meeting report (PV) according to the form, commits it, redeploys the site and comments back on the issue.
 
 ---
 
@@ -36,7 +35,7 @@ The site is rendered by `site/build.mjs`, a plain Node.js script (no framework, 
    - `.md` pages are rendered with [markdown-it](https://github.com/markdown-it/markdown-it) (raw HTML allowed).
    - `.html` pages are HTML fragments, used for pages that are mostly layout (home, forms).
    - Both start with a frontmatter block (`title`, `description`).
-2. Every `content/<collection>/*.md` file becomes a detail page (`content/nouvelles/x.md` → `nouvelles/x.html`).
+2. Every `content/<collection>/*.md` file becomes a detail page (`content/evenements/x.md` → `evenements/x.html`).
 3. Each page is wrapped in `site/templates/layout.html` (header, navigation, footer).
 4. `static/` is copied as-is to `_site/static/`.
 
@@ -47,8 +46,7 @@ Placeholders available in pages and in the layout:
 | `{{site.contact.email}}` (any path) | The value from `data/site.json` |
 | `{{#if site.x}}…{{/if}}`, `{{#unless site.x}}…{{/unless}}` | Kept only when the value is set / empty (not nestable) |
 | `{{BASE}}` | Relative prefix to the site root (`""` or `"../"`), so links work under the GitHub Pages project path |
-| `{{upcoming_events}}`, `{{upcoming_events_home}}`, `{{past_events}}` | Event cards from `content/evenements/` |
-| `{{news_list}}`, `{{latest_news_home}}` | News cards from `content/nouvelles/` |
+| `{{upcoming_events}}`, `{{upcoming_events_home}}`, `{{past_events}}`, `{{past_events_home}}` | Event cards from `content/evenements/` |
 | `{{meeting_reports}}` | PV list from `content/pv/` |
 
 Relative links inside Markdown (e.g. `[statuts](statuts.html)`) are written relative to the site root and rewritten automatically for pages in sub-directories.
@@ -88,7 +86,6 @@ siteweb/
 ├── pages/                           # Top-level pages (index, statuts, activites, ...)
 ├── content/
 │   ├── evenements/                  # Upcoming and past school events (Markdown)
-│   ├── nouvelles/                   # Blog articles and announcements (Markdown)
 │   └── pv/                          # General Assembly minutes (PV AG)
 ├── data/
 │   └── site.json                    # Association metadata, navigation, fee
@@ -108,20 +105,6 @@ siteweb/
 
 ## Publishing Content
 
-### Adding a News Article manually
-Create a new file in `content/nouvelles/YYYY-MM-DD-your-slug.md`:
-```markdown
----
-title: "Titre de l'actualité"
-date: "2025-10-15"
-category: "Actualités"
-author: "Comité APECO"
-summary: "Court résumé pour la page d'accueil."
----
-
-Votre texte en Markdown ici...
-```
-
 ### Adding an Event manually
 Create a new file in `content/evenements/YYYY-MM-DD-your-slug.md`:
 ```markdown
@@ -139,7 +122,7 @@ Détails de l'événement...
 
 ### Publishing via Word (.docx) Document
 1. Open an issue on GitHub using the template **Publier un document Word (.docx)**.
-2. Select whether it is an upcoming event, a meeting report (PV) or a news item, and give its date.
+2. Select whether it is an event or a meeting report (PV), and give its date.
 3. Drag and drop the `.docx` file into the attachment field.
 4. Submit the issue: the GitHub Action converts the document, publishes it, redeploys the site and closes the issue. Images in the document are saved under `static/images/documents/`.
 

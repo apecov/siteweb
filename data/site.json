@@ -19,7 +19,6 @@
   },
   "navigation": [
     { "label": "Accueil", "url": "index.html" },
-    { "label": "Actualités", "url": "nouvelles.html" },
     { "label": "Activités", "url": "activites.html" },
     { "label": "Statuts et PV", "url": "statuts.html" },
     { "label": "Devenir membre", "url": "adhesion.html", "cta": true },

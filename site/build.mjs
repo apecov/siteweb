@@ -210,6 +210,7 @@ function renderLayout(layout, { site, out, nav, title, description, content, yea
 
 function detailHeader(item) {
   const meta = [`<span class="badge badge-blue">${escapeHtml(item.dateFormatted)}</span>`];
+  if (item.time) meta.push(`<span>⏰ ${escapeHtml(item.time)}</span>`);
   if (item.location) meta.push(`<span>📍 ${escapeHtml(item.location)}</span>`);
   if (item.category) meta.push(`<span class="badge badge-green">${escapeHtml(item.category)}</span>`);
   return `<div style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--color-border); padding-bottom: 1rem;">

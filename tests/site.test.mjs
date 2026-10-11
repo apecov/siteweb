@@ -11,6 +11,7 @@ import {
   detectDocumentType,
   extractDocxUrls,
   parseDateFromString,
+  htmlToMarkdown,
   parseIssueForm,
   processIssue,
   typeFromFormAnswer,
@@ -188,6 +189,7 @@ test('document classification', () => {
   assert.equal(detectDocumentType('Divers', ['event'], ''), 'event');
   assert.equal(detectDocumentType('Divers', ['pv'], ''), 'pv');
   assert.equal(typeFromFormAnswer('Procès-verbal / Compte-rendu de réunion'), 'pv');
+  assert.equal(typeFromFormAnswer('Activité'), 'event');
   assert.equal(typeFromFormAnswer('Événement à venir'), 'event');
 });
 
@@ -242,4 +244,90 @@ test('processIssue writes a page from the form answers', async (t) => {
   const written = readFileSync(path.join(root, result.file), 'utf8');
   assert.match(written, /^title: "AG \\"ordinaire\\": bilan"$/m);
   assert.match(written, /Texte du PV\./);
+});
+
+/** The body of the issue form, as GitHub renders it. */
+function formBody({ type = 'Activité', date = '11.12.2026', time = '', location = '', summary = '' } = {}) {
+  return [
+    ['Type de document', type],
+    ['Date', date],
+    ['Heure', time],
+    ['Lieu', location],
+    ['Résumé', summary],
+    ['Document Word (.docx)', '[annonce.docx](https://github.com/user-attachments/files/123/annonce.docx)'],
+  ]
+    .map(([label, value]) => `### ${label}\n\n${value || '_No response_'}`)
+    .join('\n\n');
+}
+
+const ANNONCE = readFileSync(new URL('./fixtures/annonce.docx', import.meta.url));
+
+test('a Word announcement becomes an activity page', async (t) => {
+  const root = tempDir(t);
+  const issue = {
+    number: 42,
+    title: "[Publication] : Stand de l'Escalade 2026",
+    labels: [],
+    body: formBody({ time: '16h00', location: 'Préau du CO des Voirets' }),
+  };
+  const result = await processIssue({ issue }, { root, fetchDocx: async () => ANNONCE });
+  assert.equal(result.type, 'event');
+  assert.equal(result.page, 'evenements/2026-12-11-stand-de-lescalade-2026.html');
+
+  const { data, content } = (await import('gray-matter')).default(readFileSync(path.join(root, result.file), 'utf8'));
+  assert.equal(data.title, "Stand de l'Escalade 2026");
+  assert.equal(data.date, '2026-12-11');
+  assert.equal(data.time, '16h00');
+  assert.equal(data.location, 'Préau du CO des Voirets');
+  assert.equal(data.source_issue, '#42');
+  // Salutation skipped; first real sentence used.
+  assert.match(data.summary, /^L'APECO Voirets tiendra un stand/);
+  // The heading repeating the title is dropped, others are demoted below the page h1.
+  assert.doesNotMatch(content, /Stand de l'Escalade 2026/);
+  assert.match(content, /^### Au programme$/m);
+  assert.match(content, /^- +Soupe aux légumes ;$/m);
+  assert.match(content, /^\| Heure \| Quoi \|$/m);
+  assert.match(content, /^\| 17h30 \| Casse de la marmite \|$/m);
+  assert.match(content, /!\[Affiche\]\(static\/images\/documents\/issue-42-1\.png\)/);
+  assert.ok(existsSync(path.join(root, 'static/images/documents/issue-42-1.png')));
+});
+
+test('a form summary wins over the first paragraph', async (t) => {
+  const root = tempDir(t);
+  const issue = { number: 5, title: 'Escalade', labels: [], body: formBody({ summary: 'Stand de fin\nde trimestre.' }) };
+  const result = await processIssue({ issue }, { root, fetchDocx: async () => ANNONCE });
+  assert.match(readFileSync(path.join(root, result.file), 'utf8'), /^summary: "Stand de fin de trimestre\."$/m);
+  assert.doesNotMatch(readFileSync(path.join(root, result.file), 'utf8'), /^(time|location):/m, 'empty fields are left out');
+});
+
+test('editing an issue replaces its page and images', async (t) => {
+  const root = tempDir(t);
+  const publish = (title, date) =>
+    processIssue({ issue: { number: 42, title, labels: [], body: formBody({ date }) } }, { root, fetchDocx: async () => ANNONCE });
+  const first = await publish("Stand de l'Escalade 2026", '11.12.2026');
+  const second = await publish("Stand de l'Escalade", '12.12.2026');
+  assert.ok(!existsSync(path.join(root, first.file)));
+  assert.ok(existsSync(path.join(root, second.file)));
+  const { readdirSync } = await import('node:fs');
+  assert.deepEqual(readdirSync(path.join(root, 'content/evenements')), ['2026-12-12-stand-de-lescalade.md']);
+  assert.deepEqual(readdirSync(path.join(root, 'static/images/documents')), ['issue-42-1.png']);
+});
+
+test('the published activity page renders the table and image', async (t) => {
+  const root = fixtureRoot(t);
+  const result = await processIssue(
+    { issue: { number: 42, title: "Stand de l'Escalade 2026", labels: [], body: formBody({ time: '16h00' }) } },
+    { root, fetchDocx: async () => ANNONCE }
+  );
+  build({ root, outDir: path.join(root, '_site'), today: '2026-10-11' });
+  const html = readFileSync(path.join(root, '_site', result.page), 'utf8');
+  assert.match(html, /<table>/);
+  assert.match(html, /<img src="\.\.\/static\/images\/documents\/issue-42-1\.png" alt="Affiche">/);
+  assert.match(html, /⏰<\/span> 16h00/);
+  assert.match(readFileSync(path.join(root, '_site/activites.html'), 'utf8'), /Stand de l'Escalade 2026/);
+});
+
+test('Word tables without header row, multi-paragraph cells', () => {
+  const md = htmlToMarkdown('<table><tr><td><p>A</p></td><td><p>B</p></td></tr><tr><td><p>1</p><p>2</p></td><td><p>x</p></td></tr></table>');
+  assert.equal(md.replace(/ +\|/g, ' |'), '| A | B |\n| --- | --- |\n| 1 2 | x |');
 });

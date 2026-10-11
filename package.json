@@ -15,6 +15,7 @@
     "docx": "node scripts/process-issue-docx.mjs"
   },
   "devDependencies": {
+    "@joplin/turndown-plugin-gfm": "^1.0.68",
     "gray-matter": "^4.0.3",
     "jszip": "^3.10.1",
     "mammoth": "^1.9.0",

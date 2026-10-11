@@ -1,22 +1,24 @@
 name: Publier un document Word (.docx)
-description: Téléversez un document Word pour le convertir automatiquement en page web Markdown.
+description: Téléversez un document Word pour créer automatiquement une page d'activité ou un procès-verbal sur le site.
 title: "[Publication] : "
-labels: ["document"]
 body:
   - type: markdown
     attributes:
       value: |
-        ### 📄 Publication automatisée d'un document Word
-        Grâce à ce formulaire, vous pouvez déposer un compte-rendu ou une annonce d'activité au format `.docx`.
-        Une action GitHub le convertira automatiquement en page Markdown et mettra à jour le site !
+        ### 📄 Publier un document Word
+        Remplissez ce formulaire et joignez votre document `.docx`. La page est créée et le site mis à jour automatiquement en quelques minutes.
+
+        **Titre de l'issue** : il devient le titre de la page (remplacez « [Publication] : » par exemple par « Stand de l'Escalade 2026 »).
+
+        Pour corriger la page ensuite, modifiez simplement cette issue (bouton « Edit ») : la page est recréée.
 
   - type: dropdown
     id: doc_type
     attributes:
       label: Type de document
-      description: Choisissez si ce document annonce un événement ou rend compte d'une réunion passée.
+      description: Une activité (à venir ou passée) ou le procès-verbal d'une réunion.
       options:
-        - "Événement à venir"
+        - "Activité"
         - "Procès-verbal / Compte-rendu de réunion"
     validations:
       required: true
@@ -24,11 +26,31 @@ body:
   - type: input
     id: event_date
     attributes:
-      label: Date concernée
-      description: Date de l'événement ou de la réunion (format : AAAA-MM-JJ, ex. 2025-11-20).
-      placeholder: "2025-11-20"
+      label: Date
+      description: "Date de l'activité ou de la réunion, au format JJ.MM.AAAA ou AAAA-MM-JJ."
+      placeholder: "11.12.2026"
     validations:
       required: true
+
+  - type: input
+    id: event_time
+    attributes:
+      label: Heure
+      description: Facultatif.
+      placeholder: "16h00"
+
+  - type: input
+    id: event_location
+    attributes:
+      label: Lieu
+      description: Facultatif.
+      placeholder: "Préau du CO des Voirets"
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Résumé
+      description: "Facultatif : une ou deux phrases affichées dans la liste des activités. Sans résumé, le premier paragraphe du document est utilisé."
 
   - type: textarea
     id: doc_attachment
@@ -38,10 +60,3 @@ body:
       placeholder: Glissez votre fichier .docx ici...
     validations:
       required: true
-
-  - type: textarea
-    id: additional_notes
-    attributes:
-      label: Précisions utiles (Lieu, horaires, résumé)
-      description: Horaires, lieu précis au CO des Voirets, ou remarques à ajouter.
-      placeholder: ex. 19h30, salle polyvalente du CO des Voirets.

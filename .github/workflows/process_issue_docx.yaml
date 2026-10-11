@@ -1,61 +1,103 @@
-name: Process Word Document from Issue
+name: Publish a Word document from an issue
 
+# Issues created with the "Publier un document Word (.docx)" form become an
+# activity page (content/evenements/) or a PV (content/pv/). Editing the issue
+# while it is open recreates the page.
 on:
   issues:
-    types: [opened, labeled]
+    types: [opened, edited]
 
 permissions:
   contents: write
   issues: write
   actions: write
+  pages: read
+
+# One publication at a time, so two issues never race to push.
+concurrency:
+  group: publish-docx
+  cancel-in-progress: false
 
 jobs:
-  convert_docx:
-    name: Convert attached DOCX to Markdown
+  publish:
     runs-on: ubuntu-latest
-    # Only issues from the issue template (label "document") opened by people
-    # with write access to the repository; anyone else could otherwise publish
-    # to the site by opening an issue.
+    # Only issues made with the form (it adds the "Document Word (.docx)" field).
     if: >-
       github.event.issue.state == 'open' &&
-      contains(github.event.issue.labels.*.name, 'document') &&
-      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.issue.author_association)
+      contains(github.event.issue.body, '### Document Word (.docx)')
     steps:
+      # Anyone can open an issue on a public repository: only people with
+      # write access may publish to the site. (author_association is not
+      # reliable for organisation members with private membership, so ask
+      # the API.)
+      - name: Check that the author may publish
+        id: auth
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AUTHOR: ${{ github.event.issue.user.login }}
+        run: |
+          permission=$(gh api "repos/$GITHUB_REPOSITORY/collaborators/$AUTHOR/permission" --jq .permission || echo none)
+          echo "permission of $AUTHOR: $permission"
+          case "$permission" in
+            admin|maintain|write) echo "allowed=true" >> "$GITHUB_OUTPUT" ;;
+            *) echo "allowed=false" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Explain why nothing is published
+        if: steps.auth.outputs.allowed != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUM: ${{ github.event.issue.number }}
+        run: |
+          gh issue comment "$ISSUE_NUM" --repo "$GITHUB_REPOSITORY" --body "ℹ️ Seuls les membres du comité ayant accès en écriture au dépôt peuvent publier sur le site. Un membre du comité peut reprendre ce document."
+
+      # The latest default branch, not the commit the event saw: an earlier
+      # queued run may have pushed since.
       - uses: actions/checkout@v4
+        if: steps.auth.outputs.allowed == 'true'
+        with:
+          ref: ${{ github.event.repository.default_branch }}
       - uses: actions/setup-node@v4
+        if: steps.auth.outputs.allowed == 'true'
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - if: steps.auth.outputs.allowed == 'true'
+        run: npm ci
 
       - name: Convert the attached document
         id: process
+        if: steps.auth.outputs.allowed == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/process-issue-docx.mjs --event-path "$GITHUB_EVENT_PATH"
 
+      # Check that the site still builds with the new page before pushing it.
+      - name: Build the site
+        if: steps.process.outputs.created_file != ''
+        run: npm run build
+
       # Issue-controlled values go through env vars, never ${{ }} inside the
       # script, so a crafted issue title cannot inject shell commands.
-      - name: Commit and push the generated page
+      - name: Commit and push the page
         id: commit
         if: steps.process.outputs.created_file != ''
         env:
-          CREATED_FILE: ${{ steps.process.outputs.created_file }}
           DOC_TYPE: ${{ steps.process.outputs.doc_type }}
           DOC_TITLE: ${{ steps.process.outputs.doc_title }}
           ISSUE_NUM: ${{ steps.process.outputs.issue_number }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -- "$CREATED_FILE"
-          if [ -d static/images/documents ]; then git add -- static/images/documents; fi
-          # Re-running on an already published issue (e.g. when a label is
-          # added) produces the same file: nothing to commit, nothing to do.
+          # -A also stages the page and images an earlier version of this
+          # issue produced and the script removed.
+          git add -A -- content static/images/documents
           if git diff --cached --quiet; then
             echo "Page already up to date."
             exit 0
           fi
           git commit -m "Publication $DOC_TYPE : $DOC_TITLE (issue #$ISSUE_NUM)"
+          git pull --rebase origin ${{ github.event.repository.default_branch }}
           git push origin HEAD:${{ github.event.repository.default_branch }}
           echo "pushed=true" >> "$GITHUB_OUTPUT"
 
@@ -65,20 +107,34 @@ jobs:
         if: steps.commit.outputs.pushed == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run pages.yml --ref "${{ github.event.repository.default_branch }}"
+        run: gh workflow run pages.yml --repo "$GITHUB_REPOSITORY" --ref "${{ github.event.repository.default_branch }}"
 
-      - name: Comment on and close the issue
+      - name: Report the published page
         if: steps.commit.outputs.pushed == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUM: ${{ steps.process.outputs.issue_number }}
+          PAGE: ${{ steps.process.outputs.page }}
           CREATED_FILE: ${{ steps.process.outputs.created_file }}
-          DOC_TYPE: ${{ steps.process.outputs.doc_type }}
         run: |
-          gh issue close "$ISSUE_NUM" --comment "✅ **Document converti et publié avec succès !**
+          site=$(gh api "repos/$GITHUB_REPOSITORY/pages" --jq .html_url 2>/dev/null || echo "https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/")
+          gh issue comment "$ISSUE_NUM" --repo "$GITHUB_REPOSITORY" --body "✅ **Document publié !**
 
-          Le document Word a été converti en Markdown et intégré au site :
-          - **Fichier créé :** \`$CREATED_FILE\`
-          - **Catégorie :** \`$DOC_TYPE\`
+          La page sera en ligne d'ici quelques minutes : ${site%/}/$PAGE
 
-          Le site sera mis à jour automatiquement d'ici quelques minutes."
+          Fichier créé : \`$CREATED_FILE\`
+
+          Pour corriger la page, modifiez cette issue (bouton « Edit ») : elle sera recréée. Fermez l'issue quand la page vous convient."
+
+      - name: Report a problem
+        if: failure() || (steps.auth.outputs.allowed == 'true' && steps.process.outputs.created_file == '')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUM: ${{ github.event.issue.number }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh issue comment "$ISSUE_NUM" --repo "$GITHUB_REPOSITORY" --body "⚠️ **Le document n'a pas pu être publié.**
+
+          Vérifiez qu'un fichier \`.docx\` est bien joint dans le champ « Document Word (.docx) », puis modifiez l'issue pour réessayer.
+
+          Détails techniques : $RUN_URL"

@@ -22,8 +22,8 @@ The site is built with a small Node.js build script (`markdown-it` plus plain HT
   - **Devenir membre:** Membership form that prepares an e-mail to the committee (the fee comes from `data/site.json`).
   - **Contact:** Coordinates and contact form.
 - **Word Document (.docx) Automation via GitHub Issues:**
-  - Create a GitHub issue using the provided template and attach a `.docx` file.
-  - GitHub Actions runs `scripts/process-issue-docx.mjs`, converts the document with `mammoth` + `turndown` into Markdown with frontmatter, files it as an event or meeting report (PV) according to the form, commits it, redeploys the site and comments back on the issue.
+  - Create a GitHub issue using the provided form and attach a `.docx` file.
+  - GitHub Actions runs `scripts/process-issue-docx.mjs`, converts the document with `mammoth` + `turndown` (tables via the GFM plugin) into Markdown with frontmatter, files it as an activity or meeting report (PV), commits it, redeploys the site and comments back on the issue. Editing the issue recreates the page.
 
 ---
 
@@ -120,13 +120,22 @@ summary: "Moment d'échange sur les devoirs et le rythme scolaire."
 Détails de l'événement...
 ```
 
-### Publishing via Word (.docx) Document
-1. Open an issue on GitHub using the template **Publier un document Word (.docx)**.
-2. Select whether it is an event or a meeting report (PV), and give its date.
-3. Drag and drop the `.docx` file into the attachment field.
-4. Submit the issue: the GitHub Action converts the document, publishes it, redeploys the site and closes the issue. Images in the document are saved under `static/images/documents/`.
+### Publishing an activity from a Word (.docx) document
 
-Only issues carrying the `document` label (added by the template; create the label in the repository once) and opened by an owner, member or collaborator of the repository are processed.
+1. On GitHub, open **Issues → New issue → Publier un document Word (.docx)**.
+2. Replace `[Publication] : ` in the issue title with the page title, e.g. `Stand de l'Escalade 2026`.
+3. Fill in the form:
+   - **Type de document**: *Activité* (upcoming or past) or *Procès-verbal*.
+   - **Date** (required, `11.12.2026` or `2026-12-11`), and optionally **Heure**, **Lieu** and **Résumé** (shown on the activity cards; without it the first sentence of the document is used).
+   - **Document Word (.docx)**: drag and drop the file.
+4. Submit. The *Publish a Word document from an issue* workflow:
+   - checks that the author has write access to the repository (anyone else gets a comment explaining that a committee member must publish it);
+   - converts the document (headings, bold/italic, lists, tables, links and images; images are saved under `static/images/documents/`);
+   - drops a first heading that only repeats the title, and puts the page under `content/evenements/` (or `content/pv/`);
+   - builds the site, commits, redeploys, and comments on the issue with the link to the new page.
+5. To correct the page, **edit the issue** (title, fields or a new document): the page is recreated and the old version removed. Close the issue when the page is right.
+
+If something goes wrong (no `.docx` attached, unreadable file), the workflow comments on the issue with a link to the run.
 
 A local file can be converted the same way:
 

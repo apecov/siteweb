@@ -1,17 +1,5 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.venv/
-env/
-venv/
-ENV/
-
-# Output builds
+node_modules/
 _site/
-dist/
-build/
 
 # Operating system
 .DS_Store

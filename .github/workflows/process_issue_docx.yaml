@@ -7,58 +7,69 @@ on:
 permissions:
   contents: write
   issues: write
+  actions: write
 
 jobs:
   convert_docx:
     name: Convert attached DOCX to Markdown
     runs-on: ubuntu-latest
-    # Run only if the issue has relevant labels or default issue submission
-    if: github.event.issue.state == 'open'
+    # Only issues from the issue template (label "document") opened by people
+    # with write access to the repository; anyone else could otherwise publish
+    # to the site by opening an issue.
+    if: >-
+      github.event.issue.state == 'open' &&
+      contains(github.event.issue.labels.*.name, 'document') &&
+      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.issue.author_association)
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          node-version: 22
+          cache: npm
+      - run: npm ci
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Run DOCX processor script
+      - name: Convert the attached document
         id: process
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          python scripts/process_issue_docx.py --event-path "$GITHUB_EVENT_PATH"
+        run: node scripts/process-issue-docx.mjs --event-path "$GITHUB_EVENT_PATH"
 
-      - name: Commit and push generated Markdown page
+      # Issue-controlled values go through env vars, never ${{ }} inside the
+      # script, so a crafted issue title cannot inject shell commands.
+      - name: Commit and push the generated page
         if: steps.process.outputs.created_file != ''
+        env:
+          CREATED_FILE: ${{ steps.process.outputs.created_file }}
+          DOC_TYPE: ${{ steps.process.outputs.doc_type }}
+          DOC_TITLE: ${{ steps.process.outputs.doc_title }}
+          ISSUE_NUM: ${{ steps.process.outputs.issue_number }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add "${{ steps.process.outputs.created_file }}"
-          git commit -m "Auto-publish ${{ steps.process.outputs.doc_type }}: ${{ steps.process.outputs.doc_title }} (Issue #${{ steps.process.outputs.issue_number }})"
-          git push origin HEAD:${{ github.ref_name || 'main' }}
+          git add -- "$CREATED_FILE"
+          git commit -m "Publication $DOC_TYPE : $DOC_TITLE (issue #$ISSUE_NUM)"
+          git push origin HEAD:${{ github.event.repository.default_branch }}
 
-      - name: Comment on issue with publication confirmation
+      # Pushes made with GITHUB_TOKEN do not trigger other workflows, so start
+      # the deployment explicitly.
+      - name: Deploy the site
+        if: steps.process.outputs.created_file != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run pages.yml --ref "${{ github.event.repository.default_branch }}"
+
+      - name: Comment on the issue
         if: steps.process.outputs.created_file != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUM: ${{ steps.process.outputs.issue_number }}
-          DOC_FILE: ${{ steps.process.outputs.created_file }}
+          CREATED_FILE: ${{ steps.process.outputs.created_file }}
           DOC_TYPE: ${{ steps.process.outputs.doc_type }}
         run: |
           gh issue comment "$ISSUE_NUM" --body "✅ **Document converti et publié avec succès !**
 
-          Le document Word a été converti en Markdown et intégré dans le site :
-          - **Fichier créé :** \`$DOC_FILE\`
+          Le document Word a été converti en Markdown et intégré au site :
+          - **Fichier créé :** \`$CREATED_FILE\`
           - **Catégorie :** \`$DOC_TYPE\`
 
-          Le site sera automatiquement mis à jour via le déploiement GitHub Pages."
+          Le site sera mis à jour automatiquement d'ici quelques minutes."

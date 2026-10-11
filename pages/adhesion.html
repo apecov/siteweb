@@ -1,6 +1,7 @@
-{% extends "base.html" %}
-
-{% block content %}
+---
+title: "Devenir membre"
+description: "Formulaire d'adhésion à l'APECO Voirets (cotisation annuelle 20 CHF)."
+---
 <div class="container">
   <div style="margin-bottom: 2rem;">
     <h1>Devenir membre de l'APECO Voirets</h1>
@@ -87,7 +88,7 @@
           <div class="form-group" style="margin-top: 1.5rem;">
             <label class="checkbox-label">
               <input type="checkbox" id="accept-statuts" required checked>
-              <span>J'ai pris connaissance des <a href="{{ base_url }}/statuts.html" target="_blank">statuts de l'APECO Voirets</a> et confirme ma demande d'adhésion.</span>
+              <span>J'ai pris connaissance des <a href="{{BASE}}statuts.html" target="_blank">statuts de l'APECO Voirets</a> et confirme ma demande d'adhésion.</span>
             </label>
           </div>
 
@@ -106,7 +107,7 @@
       <div class="bank-box">
         <h3 style="margin-top: 0; color: var(--color-primary-dark);">Coordonnées de paiement</h3>
         <p style="font-size: 0.95rem; margin-bottom: 1rem;">
-          La cotisation annuelle est fixée à <strong>{{ site.membership.annual_fee_chf }} CHF</strong> pour l'ensemble de la famille.
+          La cotisation annuelle est fixée à <strong>{{site.membership.annual_fee_chf}} CHF</strong> pour l'ensemble de la famille.
         </p>
 
         <div class="bank-row">
@@ -122,7 +123,7 @@
         <div class="bank-row" style="flex-direction: column; gap: 0.35rem; padding: 0.75rem 0;">
           <span class="bank-label">IBAN :</span>
           <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
-            <span id="iban-value" class="bank-value">{{ site.membership.bank_details.iban }}</span>
+            <span id="iban-value" class="bank-value">{{site.membership.bank_details.iban}}</span>
             <button type="button" class="btn btn-sm btn-outline" data-copy-target="#iban-value" style="padding: 0.2rem 0.5rem; font-size: 0.85rem;">
               Copier
             </button>
@@ -151,11 +152,10 @@
         <h3 style="margin-top: 0;">Une question ?</h3>
         <p style="font-size: 0.95rem;">N'hésitez pas à contacter notre trésorerie ou notre secrétariat :</p>
         <p style="font-size: 0.95rem;">
-          ✉️ <a href="mailto:{{ site.contact.email }}">{{ site.contact.email }}</a><br>
-          📞 <a href="tel:{{ site.contact.phone }}">{{ site.contact.phone }}</a>
+          ✉️ <a href="mailto:{{site.contact.email}}">{{site.contact.email}}</a><br>
+          📞 <a href="tel:{{site.contact.phone}}">{{site.contact.phone}}</a>
         </p>
       </div>
     </div>
   </div>
 </div>
-{% endblock %}

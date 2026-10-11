@@ -40,7 +40,7 @@
     { "label": "Actualités & Blog", "url": "nouvelles.html" },
     { "label": "Activités & Agenda", "url": "activites.html" },
     { "label": "Statuts & PV d'AG", "url": "statuts.html" },
-    { "label": "Devenir membre", "url": "adhesion.html" },
+    { "label": "Devenir membre", "url": "adhesion.html", "cta": true },
     { "label": "Contact", "url": "contact.html" }
   ]
 }

@@ -1,0 +1,26 @@
+{
+  "name": "apeco-voirets-siteweb",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Site statique de l'APECO Voirets, publié sur GitHub Pages.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "node site/build.mjs",
+    "serve": "npx --yes serve _site",
+    "watch": "node site/watch.mjs",
+    "test": "node --test \"tests/*.test.mjs\"",
+    "docx": "node scripts/process-issue-docx.mjs",
+    "instagram": "node scripts/sync-instagram.mjs"
+  },
+  "devDependencies": {
+    "fast-xml-parser": "^5.2.0",
+    "gray-matter": "^4.0.3",
+    "jszip": "^3.10.1",
+    "mammoth": "^1.9.0",
+    "markdown-it": "^14.1.0",
+    "turndown": "^7.2.0"
+  }
+}

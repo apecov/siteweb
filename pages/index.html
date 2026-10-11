@@ -1,6 +1,6 @@
-{% extends "base.html" %}
-
-{% block content %}
+---
+title: "Accueil"
+---
 <div class="container">
   <!-- Hero Section -->
   <section class="hero-banner" style="border-radius: var(--radius-lg); padding: 3rem 2.5rem; margin-top: -0.5rem;">
@@ -11,10 +11,10 @@
         L'association des parents d'élèves œuvre pour faciliter le dialogue entre les familles et l'établissement scolaire, informer les parents et organiser des activités conviviales pour enrichir la vie des élèves.
       </p>
       <div class="hero-actions">
-        <a href="{{ base_url }}/adhesion.html" class="btn btn-secondary">
+        <a href="{{BASE}}adhesion.html" class="btn btn-secondary">
           ✨ Devenir membre (20 CHF/an)
         </a>
-        <a href="{{ base_url }}/activites.html" class="btn btn-outline">
+        <a href="{{BASE}}activites.html" class="btn btn-outline">
           📅 Voir le calendrier des activités
         </a>
       </div>
@@ -46,79 +46,39 @@
 
   <!-- Main Grid: Events & News -->
   <div class="grid-sidebar" style="margin-top: 2rem;">
-    <!-- Left Column: Upcoming Activities & Latest News -->
     <div>
-      <!-- Upcoming Activities -->
       <section style="margin-bottom: 3rem;">
         <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1.25rem;">
           <h2>📅 Prochaines activités</h2>
-          <a href="{{ base_url }}/activites.html" style="font-weight: 700;">Toutes les activités &rarr;</a>
+          <a href="{{BASE}}activites.html" style="font-weight: 700;">Toutes les activités &rarr;</a>
         </div>
-
-        {% if upcoming_events %}
-          {% for event in upcoming_events[:3] %}
-            <div class="card">
-              <div class="card-meta">
-                <span class="badge badge-green">{{ event.date_formatted or event.date }}</span>
-                {% if event.location %}<span>📍 {{ event.location }}</span>{% endif %}
-                {% if event.time %}<span>⏰ {{ event.time }}</span>{% endif %}
-              </div>
-              <h3 class="card-title"><a href="{{ base_url }}/{{ event.url }}">{{ event.title }}</a></h3>
-              <p>{{ event.summary }}</p>
-              <div style="margin-top: 1rem;">
-                <a href="{{ base_url }}/{{ event.url }}" class="btn btn-sm btn-outline">En savoir plus &rarr;</a>
-              </div>
-            </div>
-          {% endfor %}
-        {% else %}
-          <div class="card">
-            <p>Aucun événement programmé pour le moment. Consultez nos actualités ou contactez le comité !</p>
-          </div>
-        {% endif %}
+        {{upcoming_events_home}}
       </section>
 
-      <!-- Latest News -->
       <section>
         <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1.25rem;">
           <h2>📰 Dernières nouvelles & Informations</h2>
-          <a href="{{ base_url }}/nouvelles.html" style="font-weight: 700;">Tous les articles &rarr;</a>
+          <a href="{{BASE}}nouvelles.html" style="font-weight: 700;">Tous les articles &rarr;</a>
         </div>
-
-        {% if latest_news %}
-          {% for post in latest_news[:3] %}
-            <div class="card">
-              <div class="card-meta">
-                <span class="badge badge-blue">{{ post.date_formatted or post.date }}</span>
-                {% if post.category %}<span class="badge badge-orange">{{ post.category }}</span>{% endif %}
-              </div>
-              <h3 class="card-title"><a href="{{ base_url }}/{{ post.url }}">{{ post.title }}</a></h3>
-              <p>{{ post.summary }}</p>
-              <div style="margin-top: 1rem;">
-                <a href="{{ base_url }}/{{ post.url }}" class="btn btn-sm btn-outline">Lire la suite &rarr;</a>
-              </div>
-            </div>
-          {% endfor %}
-        {% endif %}
+        {{latest_news_home}}
       </section>
     </div>
 
     <!-- Right Sidebar: Quick Actions, Official Docs, Info -->
     <div>
-      <!-- Membership Callout Card -->
       <div class="card" style="background: linear-gradient(135deg, var(--color-primary-light) 0%, #ffffff 100%); border-color: var(--color-primary);">
         <h3 style="margin-top:0; color: var(--color-primary-dark);">Rejoignez l'APECO !</h3>
         <p>L'adhésion est ouverte à tous les parents d'élèves fréquentant le cycle des Voirets ou en fin de primaire (7e/8e Harmos).</p>
         <p><strong>Cotisation annuelle :</strong> 20 CHF par famille.</p>
         <div style="margin-top: 1.25rem;">
-          <a href="{{ base_url }}/adhesion.html" class="btn btn-secondary btn-block">Adhérer en ligne &rarr;</a>
+          <a href="{{BASE}}adhesion.html" class="btn btn-secondary btn-block">Adhérer en ligne &rarr;</a>
         </div>
       </div>
 
-      <!-- Official Documents Card -->
       <div class="card">
         <h3 style="margin-top:0;">Documents officiels</h3>
         <p style="font-size: 0.95rem; color: var(--color-text-muted);">Consultez les textes régissant l'association et les comptes-rendus d'assemblée générale :</p>
-        
+
         <div class="doc-card" style="padding: 0.85rem; margin-bottom: 0.75rem;">
           <div class="doc-info">
             <div class="doc-icon">PDF</div>
@@ -127,21 +87,20 @@
               <div class="doc-meta">Adoptés le 25 août 2025</div>
             </div>
           </div>
-          <a href="{{ base_url }}/static/docs/Statuts_APECO_Voirets_Aout_2025.pdf" class="btn btn-sm btn-outline" download>Télécharger</a>
+          <a href="{{BASE}}static/docs/Statuts_APECO_Voirets_Aout_2025.pdf" class="btn btn-sm btn-outline" download>Télécharger</a>
         </div>
 
         <div style="margin-top: 1rem;">
-          <a href="{{ base_url }}/statuts.html" style="font-weight: 700; font-size: 0.95rem;">Voir les statuts complets et PV &rarr;</a>
+          <a href="{{BASE}}statuts.html" style="font-weight: 700; font-size: 0.95rem;">Voir les statuts complets et PV &rarr;</a>
         </div>
       </div>
 
-      <!-- School Coordinates Card -->
       <div class="card">
         <h3 style="margin-top:0;">Établissement</h3>
         <p style="font-size: 0.95rem;">
-          <strong>{{ site.contact.school_name }}</strong><br>
-          {{ site.contact.address }}<br>
-          {{ site.contact.postal_code }} {{ site.contact.city }}<br>
+          <strong>{{site.contact.school_name}}</strong><br>
+          {{site.contact.address}}<br>
+          {{site.contact.postal_code}} {{site.contact.city}}<br>
           Canton de Genève
         </p>
         <p style="font-size: 0.95rem; margin-top: 0.5rem;">
@@ -161,32 +120,10 @@
         <h2>📷 Suivez-nous sur Instagram</h2>
         <p style="color: var(--color-text-muted); margin-bottom: 0;">Retrouvez les dernières photos, annonces et actualités de la vie scolaire et de l'APECO.</p>
       </div>
-      <a href="{{ site.social.instagram }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm">
+      <a href="{{site.social.instagram}}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm">
         @apeco_voirets sur Instagram &nearr;
       </a>
     </div>
-
-    <div class="ig-feed-grid">
-      {% for ig_post in instagram_posts[:3] %}
-        <div class="ig-card">
-          <div class="ig-card-header">
-            <span>📷 @apeco_voirets</span>
-            <span>{{ ig_post.date }}</span>
-          </div>
-          <div class="ig-card-body">
-            <p class="ig-card-caption">{{ ig_post.caption }}</p>
-            {% if ig_post.tags %}
-              <div class="ig-card-tags">{{ ig_post.tags | join(" ") }}</div>
-            {% endif %}
-          </div>
-          <div class="ig-card-footer">
-            <a href="{{ ig_post.permalink or site.social.instagram }}" target="_blank" rel="noopener noreferrer" style="font-weight:700; font-size:0.9rem;">
-              Voir sur Instagram &nearr;
-            </a>
-          </div>
-        </div>
-      {% endfor %}
-    </div>
+    {{instagram_feed}}
   </section>
 </div>
-{% endblock %}

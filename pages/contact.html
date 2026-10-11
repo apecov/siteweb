@@ -1,6 +1,7 @@
-{% extends "base.html" %}
-
-{% block content %}
+---
+title: "Contact & Accès"
+description: "Coordonnées, formulaire de contact et plan d'accès de l'APECO Voirets."
+---
 <div class="container">
   <div style="margin-bottom: 2rem;">
     <h1>Contact & Accès</h1>
@@ -58,18 +59,18 @@
         </p>
         <p style="margin-bottom: 0.8rem;">
           📍 <strong>Adresse postale & école :</strong><br>
-          {{ site.contact.school_name }}<br>
-          {{ site.contact.address }}<br>
-          {{ site.contact.postal_code }} {{ site.contact.city }}<br>
-          {{ site.contact.canton }}
+          {{site.contact.school_name}}<br>
+          {{site.contact.address}}<br>
+          {{site.contact.postal_code}} {{site.contact.city}}<br>
+          {{site.contact.canton}}
         </p>
         <p style="margin-bottom: 0.8rem;">
           📞 <strong>Téléphone :</strong><br>
-          <a href="tel:{{ site.contact.phone }}">{{ site.contact.phone }}</a>
+          <a href="tel:{{site.contact.phone}}">{{site.contact.phone}}</a>
         </p>
         <p style="margin-bottom: 0;">
           ✉️ <strong>Courriel :</strong><br>
-          <a href="mailto:{{ site.contact.email }}">{{ site.contact.email }}</a>
+          <a href="mailto:{{site.contact.email}}">{{site.contact.email}}</a>
         </p>
       </div>
 
@@ -95,11 +96,10 @@
           Rue de Saint-Jean 12, 1203 Genève<br>
           Tél : 022 344 22 55
         </p>
-        <a href="{{ site.social.fapeo_website }}" target="_blank" rel="noopener noreferrer" style="font-weight: 700; font-size: 0.92rem;">
+        <a href="{{site.social.fapeo_website}}" target="_blank" rel="noopener noreferrer" style="font-weight: 700; font-size: 0.92rem;">
           Visiter le site www.fapeo.ch &nearr;
         </a>
       </div>
     </div>
   </div>
 </div>
-{% endblock %}

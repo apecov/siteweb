@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+  <div style="margin-bottom: 1.5rem;">
+    <a href="{{ base_url }}/nouvelles.html" style="font-weight: 700;">&larr; Retour aux actualités</a>
+  </div>
+
+  <article class="markdown-body">
+    <div style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--color-border); padding-bottom: 1rem;">
+      <div class="card-meta">
+        <span class="badge badge-blue">{{ date_formatted or date }}</span>
+        {% if category %}<span class="badge badge-green">{{ category }}</span>{% endif %}
+        {% if author %}<span>Par {{ author }}</span>{% endif %}
+      </div>
+      <h1 style="border-bottom: none; margin-bottom: 0.5rem; margin-top: 0.5rem;">{{ title }}</h1>
+    </div>
+
+    {{ content | safe }}
+
+    <div style="margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+      <a href="{{ base_url }}/nouvelles.html" class="btn btn-outline btn-sm">&larr; Retour à la liste</a>
+      <a href="{{ base_url }}/adhesion.html" class="btn btn-secondary btn-sm">Rejoindre l'APECO (20 CHF) &rarr;</a>
+    </div>
+  </article>
+</div>
+{% endblock %}

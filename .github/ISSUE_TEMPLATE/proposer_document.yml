@@ -1,0 +1,48 @@
+name: Publier un document Word (.docx)
+description: Téléversez un document Word pour le convertir automatiquement en page web Markdown.
+title: "[Publication] : "
+labels: ["document"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### 📄 Publication automatisée d'un document Word
+        Grâce à ce formulaire, vous pouvez déposer un compte-rendu ou une annonce d'activité au format `.docx`.
+        Une action GitHub le convertira automatiquement en page Markdown et mettra à jour le site !
+
+  - type: dropdown
+    id: doc_type
+    attributes:
+      label: Type de document
+      description: Choisissez si ce document concerne un événement futur ou un compte-rendu de réunion passée.
+      options:
+        - "Événement futur (Upcoming event)"
+        - "Procès-verbal / Compte-rendu de réunion (Meeting report / PV)"
+        - "Actualité / Article général (News)"
+    validations:
+      required: true
+
+  - type: input
+    id: event_date
+    attributes:
+      label: Date concernée
+      description: Date de l'événement ou de la réunion (format : AAAA-MM-JJ, ex. 2025-11-20).
+      placeholder: "2025-11-20"
+    validations:
+      required: true
+
+  - type: textarea
+    id: doc_attachment
+    attributes:
+      label: Document Word (.docx)
+      description: Glissez-déposez ici votre fichier .docx ou insérez le lien du fichier joint.
+      placeholder: Glissez votre fichier .docx ici...
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional_notes
+    attributes:
+      label: Précisions utiles (Lieu, horaires, résumé)
+      description: Horaires, lieu précis au CO des Voirets, ou remarques à ajouter.
+      placeholder: ex. 19h30, salle polyvalente du CO des Voirets.

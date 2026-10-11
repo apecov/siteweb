@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+  <div style="margin-bottom: 2rem;">
+    <h1>Devenir membre de l'APECO Voirets</h1>
+    <p style="font-size: 1.2rem; color: var(--color-text-muted);">
+      Soutenez les initiatives en faveur des élèves et participez activement à la communauté des parents du Cycle d'orientation des Voirets.
+    </p>
+  </div>
+
+  <div class="grid-sidebar">
+    <!-- Left: Membership Form & Confirmation -->
+    <div>
+      <!-- Confirmation Panel (Hidden initially) -->
+      <div id="membership-confirmation" class="form-card" style="display: none; margin-bottom: 2rem; border-color: var(--color-secondary);">
+        <div id="confirmation-details"></div>
+      </div>
+
+      <!-- Main Membership Form -->
+      <div class="form-card">
+        <h2 style="margin-top: 0; margin-bottom: 0.5rem;">Formulaire d'adhésion</h2>
+        <p style="color: var(--color-text-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">
+          Les champs marqués d'une astérisque (<span style="color:#dc2626;">*</span>) sont obligatoires.
+        </p>
+
+        <form id="membership-form" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="parent-name">Nom et prénom du parent / représentant légal <span class="required">*</span></label>
+            <input type="text" id="parent-name" class="form-control" placeholder="ex. Marie Dupont" required>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label" for="parent-email">Adresse e-mail <span class="required">*</span></label>
+              <input type="email" id="parent-email" class="form-control" placeholder="ex. marie.dupont@exemple.ch" required>
+              <div class="form-hint">Pour recevoir les convocations et informations de l'APECO.</div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="parent-phone">Numéro de téléphone <span class="required">*</span></label>
+              <input type="tel" id="parent-phone" class="form-control" placeholder="ex. 079 123 45 67" required>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label" for="student-name">Nom et prénom de l'élève <span class="required">*</span></label>
+              <input type="text" id="student-name" class="form-control" placeholder="ex. Lucas Dupont" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="student-grade">Degré scolaire / Année <span class="required">*</span></label>
+              <select id="student-grade" class="form-control">
+                <option value="9e Harmos (CO)">9e année Harmos (CO des Voirets)</option>
+                <option value="10e Harmos (CO)">10e année Harmos (CO des Voirets)</option>
+                <option value="11e Harmos (CO)">11e année Harmos (CO des Voirets)</option>
+                <option value="8e Harmos (Futur élève)">8e année primaire (futur élève au CO)</option>
+                <option value="Ancien élève (< 2 ans)">Ancien élève du cycle (< 2 ans)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Mode de règlement de la cotisation (20 CHF) <span class="required">*</span></label>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem;">
+              <label class="checkbox-label">
+                <input type="radio" name="payment_method" value="Virement bancaire (IBAN)" checked>
+                <span>Virement bancaire électronique (IBAN)</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="radio" name="payment_method" value="Twint">
+                <span>Application Twint</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="radio" name="payment_method" value="Bulletin QR-facture">
+                <span>Bulletin de versement postal (QR-facture)</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="notes">Remarques ou souhaits d'implication (facultatif)</label>
+            <textarea id="notes" class="form-control" rows="3" placeholder="Souhaitez-vous donner un coup de main lors d'une fête, participer au comité ou proposer un projet ?"></textarea>
+          </div>
+
+          <div class="form-group" style="margin-top: 1.5rem;">
+            <label class="checkbox-label">
+              <input type="checkbox" id="accept-statuts" required checked>
+              <span>J'ai pris connaissance des <a href="{{ base_url }}/statuts.html" target="_blank">statuts de l'APECO Voirets</a> et confirme ma demande d'adhésion.</span>
+            </label>
+          </div>
+
+          <div style="margin-top: 1.75rem;">
+            <button type="submit" class="btn btn-secondary btn-block">
+              Valider mon adhésion (20 CHF) &rarr;
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Right Sidebar: Payment Details & Membership Info -->
+    <div>
+      <!-- Bank details Box -->
+      <div class="bank-box">
+        <h3 style="margin-top: 0; color: var(--color-primary-dark);">Coordonnées de paiement</h3>
+        <p style="font-size: 0.95rem; margin-bottom: 1rem;">
+          La cotisation annuelle est fixée à <strong>{{ site.membership.annual_fee_chf }} CHF</strong> pour l'ensemble de la famille.
+        </p>
+
+        <div class="bank-row">
+          <span class="bank-label">Bénéficiaire :</span>
+          <span style="font-weight: 700; text-align: right; max-width: 60%;">APECO Voirets</span>
+        </div>
+
+        <div class="bank-row">
+          <span class="bank-label">Banque :</span>
+          <span>BCGE Genève</span>
+        </div>
+
+        <div class="bank-row" style="flex-direction: column; gap: 0.35rem; padding: 0.75rem 0;">
+          <span class="bank-label">IBAN :</span>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+            <span id="iban-value" class="bank-value">{{ site.membership.bank_details.iban }}</span>
+            <button type="button" class="btn btn-sm btn-outline" data-copy-target="#iban-value" style="padding: 0.2rem 0.5rem; font-size: 0.85rem;">
+              Copier
+            </button>
+          </div>
+        </div>
+
+        <div class="bank-row">
+          <span class="bank-label">Communication :</span>
+          <span style="font-size: 0.9rem;">Cotisation + Nom élève</span>
+        </div>
+      </div>
+
+      <!-- Membership Criteria Card -->
+      <div class="card">
+        <h3 style="margin-top: 0;">Qui peut adhérer ?</h3>
+        <p style="font-size: 0.95rem; color: var(--color-text-muted);">Conformément à l'article 6 de nos statuts, peuvent devenir membres :</p>
+        <ul style="font-size: 0.95rem;">
+          <li>Les parents dont les enfants fréquentent le cycle des Voirets ;</li>
+          <li>Les parents d'enfants en 7<sup>e</sup> ou 8<sup>e</sup> primaire qui vont rejoindre les Voirets ;</li>
+          <li>Les parents d'élèves ayant quitté le cycle depuis moins de deux ans.</li>
+        </ul>
+      </div>
+
+      <!-- Questions -->
+      <div class="card">
+        <h3 style="margin-top: 0;">Une question ?</h3>
+        <p style="font-size: 0.95rem;">N'hésitez pas à contacter notre trésorerie ou notre secrétariat :</p>
+        <p style="font-size: 0.95rem;">
+          ✉️ <a href="mailto:{{ site.contact.email }}">{{ site.contact.email }}</a><br>
+          📞 <a href="tel:{{ site.contact.phone }}">{{ site.contact.phone }}</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

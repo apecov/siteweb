@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% if page_title %}{{ page_title }} - {% endif %}{{ site.title }} | {{ site.full_title }}</title>
+  <meta name="description" content="{% if page_description %}{{ page_description }}{% else %}{{ site.description }}{% endif %}">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="{{ base_url }}/static/images/favicon.svg">
+  
+  <!-- Google Fonts: Alegreya Sans (reminiscent of FAPEO) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:ital,wght@0,300;0,400;0,500;0,700;0,800;1,400&display=swap" rel="stylesheet">
+  
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="{{ base_url }}/static/css/style.css">
+  
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <!-- Top Utility Bar -->
+  <div class="top-bar">
+    <div class="container">
+      <div class="top-bar-meta">
+        <span class="top-bar-badge">🇨🇭 {{ site.contact.school_name }} • {{ site.contact.canton }}</span>
+        <span>•</span>
+        <span>Membre affilié de la <a href="{{ site.social.fapeo_website }}" target="_blank" rel="noopener noreferrer" style="color:#9ac331; font-weight:700;">FAPEO</a></span>
+      </div>
+      <div class="top-bar-links">
+        <a href="tel:{{ site.contact.phone }}">📞 {{ site.contact.phone }}</a>
+        <a href="mailto:{{ site.contact.email }}">✉️ {{ site.contact.email }}</a>
+        <a href="{{ site.social.instagram }}" target="_blank" rel="noopener noreferrer">📷 Instagram</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Site Header -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="{{ base_url }}/index.html" class="brand">
+        <div class="brand-logo">
+          <img src="{{ base_url }}/static/images/logo.svg" alt="Logo APECO Voirets" width="48" height="48">
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">{{ site.title }}</span>
+          <span class="brand-subtitle">{{ site.full_title }}</span>
+        </div>
+      </a>
+
+      <!-- Mobile Navigation Button -->
+      <button class="nav-toggle" aria-label="Menu principal" aria-expanded="false">
+        ☰
+      </button>
+
+      <!-- Navigation Links -->
+      <nav aria-label="Navigation principale">
+        <ul class="nav-menu">
+          {% for item in site.navigation %}
+            {% if item.label == 'Devenir membre' %}
+              <li><a href="{{ base_url }}/{{ item.url }}" class="nav-link nav-cta {% if current_page == item.url %}active{% endif %}">{{ item.label }}</a></li>
+            {% else %}
+              <li><a href="{{ base_url }}/{{ item.url }}" class="nav-link {% if current_page == item.url %}active{% endif %}">{{ item.label }}</a></li>
+            {% endif %}
+          {% endfor %}
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content Block -->
+  <main class="site-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <!-- Col 1: About -->
+        <div class="footer-col">
+          <h3>{{ site.title }}</h3>
+          <p>{{ site.full_title }}</p>
+          <p>
+            📍 {{ site.contact.school_name }}<br>
+            {{ site.contact.address }}<br>
+            {{ site.contact.postal_code }} {{ site.contact.city }} ({{ site.contact.canton }})
+          </p>
+          <p>
+            📞 <a href="tel:{{ site.contact.phone }}">{{ site.contact.phone }}</a><br>
+            ✉️ <a href="mailto:{{ site.contact.email }}">{{ site.contact.email }}</a>
+          </p>
+        </div>
+
+        <!-- Col 2: Navigation Links -->
+        <div class="footer-col">
+          <h3>Accès rapide</h3>
+          <ul class="footer-links">
+            <li><a href="{{ base_url }}/index.html">Accueil</a></li>
+            <li><a href="{{ base_url }}/nouvelles.html">Actualités & Blog</a></li>
+            <li><a href="{{ base_url }}/activites.html">Activités & Agenda</a></li>
+            <li><a href="{{ base_url }}/statuts.html">Statuts & Procès-verbaux</a></li>
+            <li><a href="{{ base_url }}/adhesion.html">Devenir membre (20 CHF)</a></li>
+            <li><a href="{{ base_url }}/contact.html">Contact & Accès</a></li>
+          </ul>
+        </div>
+
+        <!-- Col 3: Network & Affiliation -->
+        <div class="footer-col">
+          <h3>Réseau & Partenaires</h3>
+          <p>L'APECO Voirets est membre de la Fédération des Associations de Parents d'Élèves de l'Enseignement Obligatoire (Genève).</p>
+          <div style="margin-top: 1rem;">
+            <a href="{{ site.social.fapeo_website }}" target="_blank" rel="noopener noreferrer" class="fapeo-partner-badge">
+              <span>🌐</span>
+              <span>Visiter <strong>www.fapeo.ch</strong></span>
+            </a>
+          </div>
+          <div style="margin-top: 0.75rem;">
+            <a href="{{ site.social.fapeo_page }}" target="_blank" rel="noopener noreferrer" class="fapeo-partner-badge">
+              <span>📋</span>
+              <span>Page APECO Voirets sur FAPEO</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Bottom -->
+      <div class="footer-bottom">
+        <div>
+          &copy; {{ current_year }} {{ site.title }} — Association sans but lucratif régie par les art. 60 et ss. du Code civil suisse.
+        </div>
+        <div>
+          Site statique hébergé sur GitHub Pages • Rendu avec Python
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="{{ base_url }}/static/js/main.js"></script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

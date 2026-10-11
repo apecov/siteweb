@@ -1,0 +1,46 @@
+{
+  "title": "APECO Voirets",
+  "full_title": "Association des parents d'élèves du cycle d'orientation des Voirets",
+  "description": "Site officiel de l'APECO Voirets (Genève). Actualités, statuts, adhésion, procès-verbaux et calendrier des activités pour les parents et élèves du CO des Voirets.",
+  "language": "fr",
+  "base_url": "",
+  "contact": {
+    "email": "contact@apeco-voirets.ch",
+    "phone": "076 690 67 76",
+    "school_name": "Cycle d'orientation des Voirets",
+    "address": "Rue de Pré-Long 1",
+    "postal_code": "1228",
+    "city": "Plan-les-Ouates",
+    "canton": "Genève, Suisse",
+    "geo_info": "Plan-les-Ouates / Grand-Lancy"
+  },
+  "social": {
+    "instagram": "https://www.instagram.com/apeco_voirets/",
+    "fapeo_instagram": "https://www.instagram.com/fapeo_geneve/",
+    "fapeo_website": "https://www.fapeo.ch/",
+    "fapeo_page": "https://www.fapeo.ch/ape-co/voirets/"
+  },
+  "membership": {
+    "annual_fee_chf": 20,
+    "fee_validity": "Année scolaire en cours (valable pour toute la famille)",
+    "payment_modes": [
+      "Virement bancaire (IBAN)",
+      "Twint",
+      "Bulletin de versement (QR-facture)"
+    ],
+    "bank_details": {
+      "beneficiary": "Association des parents d'élèves du cycle d'orientation des Voirets (APECO Voirets)",
+      "iban": "CH76 0900 0000 1472 6701 5",
+      "bank": "Banque Cantonale de Genève (BCGE)",
+      "reference": "Cotisation APECO [Nom de l'enfant / Classe]"
+    }
+  },
+  "navigation": [
+    { "label": "Accueil", "url": "index.html" },
+    { "label": "Actualités & Blog", "url": "nouvelles.html" },
+    { "label": "Activités & Agenda", "url": "activites.html" },
+    { "label": "Statuts & PV d'AG", "url": "statuts.html" },
+    { "label": "Devenir membre", "url": "adhesion.html" },
+    { "label": "Contact", "url": "contact.html" }
+  ]
+}

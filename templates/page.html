@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+  {% if back_url %}
+    <div style="margin-bottom: 1.5rem;">
+      <a href="{{ base_url }}/{{ back_url }}" style="font-weight: 700;">&larr; {{ back_label or 'Retour' }}</a>
+    </div>
+  {% endif %}
+
+  <article class="markdown-body">
+    {% if title %}
+      <div style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--color-border); padding-bottom: 1rem;">
+        {% if date %}
+          <div class="card-meta">
+            <span class="badge badge-blue">{{ date_formatted or date }}</span>
+            {% if location %}<span>📍 {{ location }}</span>{% endif %}
+            {% if category %}<span class="badge badge-green">{{ category }}</span>{% endif %}
+          </div>
+        {% endif %}
+        <h1 style="border-bottom: none; margin-bottom: 0.5rem; margin-top: 0.5rem;">{{ title }}</h1>
+      </div>
+    {% endif %}
+
+    {{ content | safe }}
+  </article>
+</div>
+{% endblock %}

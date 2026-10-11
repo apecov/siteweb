@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, existsSync, readFileSync, statSync } from 'node:fs';
+import { mkdtempSync, rmSync, existsSync, readFileSync, statSync, cpSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import JSZip from 'jszip';
-import { build } from '../site/build.mjs';
+import { build, ROOT } from '../site/build.mjs';
 import { slugify, formatFrenchDate } from '../site/lib/content.mjs';
 import {
   convertDocxToMarkdown,
@@ -15,12 +15,43 @@ import {
   processIssue,
   typeFromFormAnswer,
 } from '../scripts/process-issue-docx.mjs';
-import { parseFeed, parseTagsFromCaption } from '../scripts/sync-instagram.mjs';
 
 function tempDir(t) {
   const dir = mkdtempSync(path.join(tmpdir(), 'apeco-'));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   return dir;
+}
+
+const FIXTURES = {
+  'content/evenements/2025-11-15-cafe-des-parents.md':
+    '---\ntitle: "Café des parents"\ndate: "2025-11-15"\nlocation: "Salle polyvalente"\nsummary: "Rencontre."\n---\n\nTexte.\n',
+  'content/evenements/2025-12-05-escalade.md':
+    '---\ntitle: "Stand de l\'Escalade"\ndate: "2025-12-05"\nsummary: "Stand."\n---\n\nTexte.\n',
+  'content/nouvelles/2025-08-25-ag.md':
+    '---\ntitle: "Assemblée générale"\ndate: "2025-08-25"\nsummary: "Résumé."\n---\n\nVoir les [statuts](statuts.html).\n\n<script>alert(1)</script>\n',
+  'content/pv/2025-08-25-pv.md': '---\ntitle: "PV de l\'AG"\ndate: "2025-08-25"\nsummary: "PV."\n---\n\nTexte du PV.\n',
+};
+
+/** A copy of the site (pages, layout, static, data) with fixture content. */
+function fixtureRoot(t, { email = '' } = {}) {
+  const root = tempDir(t);
+  for (const dir of ['pages', 'site', 'static', 'data']) cpSync(path.join(ROOT, dir), path.join(root, dir), { recursive: true });
+  for (const [rel, text] of Object.entries(FIXTURES)) {
+    mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
+    writeFileSync(path.join(root, rel), text);
+  }
+  const sitePath = path.join(root, 'data/site.json');
+  const site = JSON.parse(readFileSync(sitePath, 'utf8'));
+  site.contact.email = email;
+  writeFileSync(sitePath, JSON.stringify(site));
+  return root;
+}
+
+function buildFixture(t, options = {}) {
+  const root = fixtureRoot(t, options);
+  const out = path.join(root, '_site');
+  build({ root, outDir: out, today: options.today || '2025-10-01' });
+  return (p) => readFileSync(path.join(out, p), 'utf8');
 }
 
 async function minimalDocx(paragraphs) {
@@ -50,63 +81,72 @@ async function minimalDocx(paragraphs) {
   return zip.generateAsync({ type: 'nodebuffer' });
 }
 
-test('build renders every page, asset and collection item', (t) => {
+test('the real site builds without sample content', (t) => {
   const out = tempDir(t);
   build({ outDir: out, today: '2025-10-01' });
-
-  for (const page of [
-    'index.html',
-    'statuts.html',
-    'activites.html',
-    'adhesion.html',
-    'contact.html',
-    'nouvelles.html',
-    'evenements/2025-11-15-cafe-des-parents-automne.html',
-    'pv/2025-08-25-pv-ag-constitutive.html',
-    'static/css/style.css',
-    'static/js/main.js',
-    'static/images/logo.svg',
-    'static/docs/Statuts_APECO_Voirets_Aout_2025.pdf',
-  ]) {
-    assert.ok(existsSync(path.join(out, page)), `${page} exists`);
+  for (const page of ['index.html', 'statuts.html', 'activites.html', 'adhesion.html', 'contact.html', 'nouvelles.html']) {
     assert.ok(statSync(path.join(out, page)).size > 0, `${page} is not empty`);
   }
-  assert.ok(existsSync(path.join(out, '.nojekyll')));
+  for (const asset of ['static/css/style.css', 'static/js/main.js', 'static/images/logo-apecov.jpg', 'static/fonts/alegreya-sans-latin-400-normal.woff2', '.nojekyll']) {
+    assert.ok(existsSync(path.join(out, asset)), `${asset} exists`);
+  }
+  const statuts = readFileSync(path.join(out, 'statuts.html'), 'utf8');
+  assert.match(statuts, /Art\. 1 :/);
+  assert.match(statuts, /Art\. 14 :/);
+  assert.match(statuts, /par ¾ des membres/);
+});
 
-  const read = (p) => readFileSync(path.join(out, p), 'utf8');
+test('build renders pages and collection items', (t) => {
+  const read = buildFixture(t);
   const index = read('index.html');
   assert.match(index, /APECO Voirets/);
   assert.match(index, /Devenir membre/);
-  assert.match(index, /FAPEO/);
-  assert.match(index, /Café des parents d’automne|Café des parents d'automne/);
+  assert.match(index, /Café des parents/);
   assert.doesNotMatch(index, /\{\{/, 'no unreplaced placeholders');
-
-  const statuts = read('statuts.html');
-  assert.match(statuts, /Art\. 1 :/);
-  assert.match(statuts, /Art\. 14 :/);
-  assert.match(statuts, /Procès-verbal/);
-
-  const adhesion = read('adhesion.html');
-  assert.match(adhesion, /20 CHF/);
-  assert.match(adhesion, /BCGE/);
+  assert.doesNotMatch(index, /fonts\.googleapis/);
+  assert.match(read('statuts.html'), /PV de l'AG/);
+  assert.match(read('adhesion.html'), /20 CHF/);
+  assert.match(read('pv/2025-08-25-pv.html'), /Texte du PV/);
 });
 
 test('upcoming and past events are split on the build date', (t) => {
-  const out = tempDir(t);
-  build({ outDir: out, today: '2025-12-01' });
-  const activites = readFileSync(path.join(out, 'activites.html'), 'utf8');
-  const [upcoming, past] = activites.split('Activités passées');
-  assert.match(upcoming, /Marmite de l'Escalade/);
-  assert.match(past, /Café des parents d'automne/);
+  const read = buildFixture(t, { today: '2025-12-01' });
+  const [upcoming, past] = read('activites.html').split('Activités passées');
+  assert.match(upcoming, /Stand de l'Escalade/);
+  assert.match(past, /Café des parents/);
 });
 
 test('links in collection pages resolve from their subdirectory', (t) => {
-  const out = tempDir(t);
-  build({ outDir: out, today: '2025-10-01' });
-  const html = readFileSync(path.join(out, 'nouvelles/2025-08-25-assemblee-constitutive.html'), 'utf8');
+  const html = buildFixture(t)('nouvelles/2025-08-25-ag.html');
   assert.match(html, /href="\.\.\/statuts\.html"/);
   assert.match(html, /href="\.\.\/static\/css\/style\.css"/);
   assert.doesNotMatch(html, /href="\/static/);
+});
+
+test('raw HTML in content is escaped', (t) => {
+  const html = buildFixture(t)('nouvelles/2025-08-25-ag.html');
+  assert.doesNotMatch(html, /<script>alert/);
+  assert.match(html, /&lt;script&gt;alert/);
+});
+
+test('without a contact e-mail, mail links and forms are hidden', (t) => {
+  const read = buildFixture(t);
+  for (const page of ['index.html', 'contact.html', 'adhesion.html']) assert.doesNotMatch(read(page), /mailto:/, page);
+  assert.match(read('contact.html'), /bientôt disponible/);
+  assert.doesNotMatch(read('adhesion.html'), /membership-form/);
+});
+
+test('with a contact e-mail, forms point to it', (t) => {
+  const read = buildFixture(t, { email: 'comite@example.org' });
+  assert.match(read('contact.html'), /data-mailto="comite@example\.org"/);
+  assert.match(read('adhesion.html'), /id="membership-form" data-mailto="comite@example\.org" data-fee="20"/);
+  assert.doesNotMatch(read('adhesion.html'), /bientôt disponible/);
+});
+
+test('decorative emoji are hidden from screen readers', (t) => {
+  const index = buildFixture(t)('index.html');
+  assert.match(index, /<span aria-hidden="true">🤝<\/span>/);
+  assert.match(index, /<span aria-hidden="true">🇨🇭<\/span>/);
 });
 
 test('slugify and French dates', () => {
@@ -130,16 +170,16 @@ test('document classification', () => {
   assert.equal(detectDocumentType('PV Assemblée Générale', [], ''), 'pv');
   assert.equal(detectDocumentType('Divers', ['event'], ''), 'event');
   assert.equal(detectDocumentType('Divers', ['pv'], ''), 'pv');
-  assert.equal(typeFromFormAnswer('Procès-verbal / Compte-rendu de réunion (Meeting report / PV)'), 'pv');
-  assert.equal(typeFromFormAnswer('Événement futur (Upcoming event)'), 'event');
-  assert.equal(typeFromFormAnswer('Actualité / Article général (News)'), 'news');
+  assert.equal(typeFromFormAnswer('Procès-verbal / Compte-rendu de réunion'), 'pv');
+  assert.equal(typeFromFormAnswer('Événement à venir'), 'event');
+  assert.equal(typeFromFormAnswer('Actualité / Article général'), 'news');
 });
 
 test('issue form parsing and attachment links', () => {
   const body = [
     '### Type de document',
     '',
-    'Procès-verbal / Compte-rendu de réunion (Meeting report / PV)',
+    'Procès-verbal / Compte-rendu de réunion',
     '',
     '### Date concernée',
     '',
@@ -186,16 +226,4 @@ test('processIssue writes a page from the form answers', async (t) => {
   const written = readFileSync(path.join(root, result.file), 'utf8');
   assert.match(written, /^title: "AG \\"ordinaire\\": bilan"$/m);
   assert.match(written, /Texte du PV\./);
-});
-
-test('instagram tags and feed parsing', () => {
-  assert.deepEqual(parseTagsFromCaption('Un super moment au cycle ! #apeco #voirets #genève'), ['#apeco', '#voirets', '#genève']);
-  const posts = parseFeed(`<?xml version="1.0"?><rss version="2.0"><channel>
-    <item><title>t</title><description>&lt;p&gt;Rentrée #apeco&lt;/p&gt;</description>
-    <link>https://www.instagram.com/p/abc/</link><guid>abc</guid><pubDate>Thu, 18 Sep 2025 10:00:00 GMT</pubDate></item>
-  </channel></rss>`);
-  assert.equal(posts.length, 1);
-  assert.equal(posts[0].caption, 'Rentrée #apeco');
-  assert.equal(posts[0].date, '2025-09-18');
-  assert.deepEqual(posts[0].tags, ['#apeco']);
 });

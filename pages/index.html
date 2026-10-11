@@ -2,7 +2,6 @@
 title: "Accueil"
 ---
 <div class="container">
-  <!-- Hero Section -->
   <section class="hero-banner" style="border-radius: var(--radius-lg); padding: 3rem 2.5rem; margin-top: -0.5rem;">
     <div class="hero-content">
       <span class="hero-tag">Cycle d'orientation des Voirets • Genève</span>
@@ -12,39 +11,37 @@ title: "Accueil"
       </p>
       <div class="hero-actions">
         <a href="{{BASE}}adhesion.html" class="btn btn-secondary">
-          ✨ Devenir membre (20 CHF/an)
+          ✨ Devenir membre ({{site.membership.annual_fee_chf}} CHF par an)
         </a>
         <a href="{{BASE}}activites.html" class="btn btn-outline">
-          📅 Voir le calendrier des activités
+          📅 Voir les activités
         </a>
       </div>
     </div>
   </section>
 
-  <!-- 3 Pillars Cards -->
   <section style="margin-top: 3rem;">
     <div class="grid-3">
       <div class="card">
         <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">🤝</div>
-        <h3 class="card-title">Écoute & Dialogue</h3>
+        <h3 class="card-title">Écoute et dialogue</h3>
         <p>Faciliter les liens entre les familles, l'équipe pédagogique et la direction du cycle pour construire une scolarité épanouie.</p>
       </div>
 
       <div class="card">
         <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">☕</div>
-        <h3 class="card-title">Rencontres & Cafés Parents</h3>
-        <p>Organiser des moments chaleureux d'échange d'expériences, des tables rondes thématiques et des conférences adaptées aux adolescents.</p>
+        <h3 class="card-title">Rencontres entre parents</h3>
+        <p>Organiser des moments d'échange entre parents, des tables rondes thématiques et des conférences sur l'adolescence.</p>
       </div>
 
       <div class="card">
         <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">📚</div>
-        <h3 class="card-title">Représentation & Statuts</h3>
-        <p>Porter la voix des parents au sein des instances participatives et relayer les ressources de la fédération cantonale FAPEO.</p>
+        <h3 class="card-title">Représentation des parents</h3>
+        <p>Porter la voix des parents auprès de l'établissement et relayer les ressources de la fédération cantonale FAPEO.</p>
       </div>
     </div>
   </section>
 
-  <!-- Main Grid: Events & News -->
   <div class="grid-sidebar" style="margin-top: 2rem;">
     <div>
       <section style="margin-bottom: 3rem;">
@@ -57,42 +54,27 @@ title: "Accueil"
 
       <section>
         <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1.25rem;">
-          <h2>📰 Dernières nouvelles & Informations</h2>
-          <a href="{{BASE}}nouvelles.html" style="font-weight: 700;">Tous les articles &rarr;</a>
+          <h2>📰 Dernières actualités</h2>
+          <a href="{{BASE}}nouvelles.html" style="font-weight: 700;">Toutes les actualités &rarr;</a>
         </div>
         {{latest_news_home}}
       </section>
     </div>
 
-    <!-- Right Sidebar: Quick Actions, Official Docs, Info -->
     <div>
       <div class="card" style="background: linear-gradient(135deg, var(--color-primary-light) 0%, #ffffff 100%); border-color: var(--color-primary);">
         <h3 style="margin-top:0; color: var(--color-primary-dark);">Rejoignez l'APECO !</h3>
-        <p>L'adhésion est ouverte à tous les parents d'élèves fréquentant le cycle des Voirets ou en fin de primaire (7e/8e Harmos).</p>
-        <p><strong>Cotisation annuelle :</strong> 20 CHF par famille.</p>
+        <p>L'adhésion est ouverte aux parents dont les enfants fréquentent le cycle des Voirets, vont y entrer (7e ou 8e primaire) ou l'ont quitté depuis moins de deux ans.</p>
+        <p><strong>Cotisation annuelle :</strong> {{site.membership.annual_fee_chf}} CHF par famille.</p>
         <div style="margin-top: 1.25rem;">
-          <a href="{{BASE}}adhesion.html" class="btn btn-secondary btn-block">Adhérer en ligne &rarr;</a>
+          <a href="{{BASE}}adhesion.html" class="btn btn-secondary btn-block">Formulaire d'adhésion &rarr;</a>
         </div>
       </div>
 
       <div class="card">
         <h3 style="margin-top:0;">Documents officiels</h3>
-        <p style="font-size: 0.95rem; color: var(--color-text-muted);">Consultez les textes régissant l'association et les comptes-rendus d'assemblée générale :</p>
-
-        <div class="doc-card" style="padding: 0.85rem; margin-bottom: 0.75rem;">
-          <div class="doc-info">
-            <div class="doc-icon">PDF</div>
-            <div>
-              <div class="doc-title" style="font-size: 0.98rem;">Statuts de l'APECO</div>
-              <div class="doc-meta">Adoptés le 25 août 2025</div>
-            </div>
-          </div>
-          <a href="{{BASE}}static/docs/Statuts_APECO_Voirets_Aout_2025.pdf" class="btn btn-sm btn-outline" download>Télécharger</a>
-        </div>
-
-        <div style="margin-top: 1rem;">
-          <a href="{{BASE}}statuts.html" style="font-weight: 700; font-size: 0.95rem;">Voir les statuts complets et PV &rarr;</a>
-        </div>
+        <p style="font-size: 0.95rem; color: var(--color-text-muted);">Les statuts adoptés le 25 août 2025 et les procès-verbaux d'assemblée générale :</p>
+        <a href="{{BASE}}statuts.html" style="font-weight: 700; font-size: 0.95rem;">Statuts et procès-verbaux &rarr;</a>
       </div>
 
       <div class="card">
@@ -100,30 +82,9 @@ title: "Accueil"
         <p style="font-size: 0.95rem;">
           <strong>{{site.contact.school_name}}</strong><br>
           {{site.contact.address}}<br>
-          {{site.contact.postal_code}} {{site.contact.city}}<br>
-          Canton de Genève
-        </p>
-        <p style="font-size: 0.95rem; margin-top: 0.5rem;">
-          Site cantonal du CO :<br>
-          <a href="https://www.ge.ch/ecole-genevoise/cycle-orientation-voirets" target="_blank" rel="noopener noreferrer">
-            ge.ch/ecole-genevoise/cycle-orientation-voirets &nearr;
-          </a>
+          {{site.contact.postal_code}} {{site.contact.city}}
         </p>
       </div>
     </div>
   </div>
-
-  <!-- Instagram Feed Section -->
-  <section class="ig-section">
-    <div class="ig-header">
-      <div>
-        <h2>📷 Suivez-nous sur Instagram</h2>
-        <p style="color: var(--color-text-muted); margin-bottom: 0;">Retrouvez les dernières photos, annonces et actualités de la vie scolaire et de l'APECO.</p>
-      </div>
-      <a href="{{site.social.instagram}}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm">
-        @apeco_voirets sur Instagram &nearr;
-      </a>
-    </div>
-    {{instagram_feed}}
-  </section>
 </div>

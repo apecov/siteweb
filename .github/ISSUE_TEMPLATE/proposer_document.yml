@@ -14,11 +14,11 @@ body:
     id: doc_type
     attributes:
       label: Type de document
-      description: Choisissez si ce document concerne un événement futur ou un compte-rendu de réunion passée.
+      description: Choisissez si ce document annonce un événement, rend compte d'une réunion passée ou est une actualité.
       options:
-        - "Événement futur (Upcoming event)"
-        - "Procès-verbal / Compte-rendu de réunion (Meeting report / PV)"
-        - "Actualité / Article général (News)"
+        - "Événement à venir"
+        - "Procès-verbal / Compte-rendu de réunion"
+        - "Actualité / Article général"
     validations:
       required: true
 
@@ -35,7 +35,7 @@ body:
     id: doc_attachment
     attributes:
       label: Document Word (.docx)
-      description: Glissez-déposez ici votre fichier .docx ou insérez le lien du fichier joint.
+      description: Glissez-déposez ici votre fichier .docx.
       placeholder: Glissez votre fichier .docx ici...
     validations:
       required: true

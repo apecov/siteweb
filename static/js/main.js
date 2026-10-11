@@ -1,7 +1,20 @@
 /**
  * APECO Voirets - Frontend JavaScript
- * Mobile menu toggle, form helpers, and clipboard utilities
+ * Mobile menu toggle and the mailto-based membership and contact forms.
+ * The recipient address and the fee come from the forms' data-* attributes,
+ * which the build fills from data/site.json.
  */
+
+function el(tag, attrs = {}, children = []) {
+  const node = document.createElement(tag);
+  Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
+  children.forEach((child) => node.append(child));
+  return node;
+}
+
+function mailtoUrl(to, subject, body) {
+  return `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   // 1. Mobile Menu Toggle
@@ -11,11 +24,10 @@ document.addEventListener('DOMContentLoaded', () => {
   if (navToggle && navMenu) {
     navToggle.addEventListener('click', () => {
       const isExpanded = navToggle.getAttribute('aria-expanded') === 'true';
-      navToggle.setAttribute('aria-expanded', !isExpanded);
+      navToggle.setAttribute('aria-expanded', String(!isExpanded));
       navMenu.classList.toggle('open');
     });
 
-    // Close menu when clicking outside
     document.addEventListener('click', (event) => {
       if (!navToggle.contains(event.target) && !navMenu.contains(event.target) && navMenu.classList.contains('open')) {
         navMenu.classList.remove('open');
@@ -24,87 +36,71 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 2. Clipboard Copy Utility (e.g. for IBAN)
-  const copyButtons = document.querySelectorAll('[data-copy-target]');
-  copyButtons.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const targetSelector = btn.getAttribute('data-copy-target');
-      const targetElement = document.querySelector(targetSelector);
-      if (targetElement) {
-        const textToCopy = targetElement.innerText || targetElement.value;
-        navigator.clipboard.writeText(textToCopy).then(() => {
-          const originalText = btn.innerText;
-          btn.innerText = '✓ Copié !';
-          btn.classList.add('btn-secondary');
-          setTimeout(() => {
-            btn.innerText = originalText;
-            btn.classList.remove('btn-secondary');
-          }, 2000);
-        }).catch(err => {
-          console.error('Failed to copy: ', err);
-        });
-      }
-    });
-  });
-
-  // 3. Interactive Membership Form Handler
+  // 2. Membership Form: builds an e-mail to the committee
   const membershipForm = document.getElementById('membership-form');
   if (membershipForm) {
     membershipForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      
-      const parentName = document.getElementById('parent-name').value.trim();
-      const parentEmail = document.getElementById('parent-email').value.trim();
-      const parentPhone = document.getElementById('parent-phone').value.trim();
-      const studentName = document.getElementById('student-name').value.trim();
-      const studentGrade = document.getElementById('student-grade').value;
-      const paymentMethod = document.querySelector('input[name="payment_method"]:checked')?.value || 'Virement bancaire';
-      const notes = document.getElementById('notes')?.value.trim() || '';
 
-      if (!parentName || !parentEmail || !studentName) {
-        alert('Veuillez remplir les champs obligatoires (*) pour finaliser votre adhésion.');
+      const value = (id) => document.getElementById(id).value.trim();
+      const parentName = value('parent-name');
+      const parentEmail = value('parent-email');
+      const parentPhone = value('parent-phone');
+      const studentName = value('student-name');
+      const studentGrade = value('student-grade');
+      const notes = value('notes');
+      const acceptedStatuts = document.getElementById('accept-statuts').checked;
+      const fee = membershipForm.dataset.fee;
+
+      if (!parentName || !parentEmail || !parentPhone || !studentName || !acceptedStatuts) {
+        alert('Veuillez remplir les champs obligatoires (*) et confirmer avoir pris connaissance des statuts.');
         return;
       }
 
-      // Display confirmation
-      const confirmationCard = document.getElementById('membership-confirmation');
-      const confirmationDetails = document.getElementById('confirmation-details');
-      
       const emailBody = [
-        `Demande d'adhésion APECO Voirets`,
-        `----------------------------------------`,
+        "Demande d'adhésion APECO Voirets",
+        '----------------------------------------',
         `Parent : ${parentName}`,
         `E-mail : ${parentEmail}`,
         `Téléphone : ${parentPhone}`,
         `Élève : ${studentName} (${studentGrade})`,
-        `Mode de cotisation : ${paymentMethod} (20 CHF)`,
-        notes ? `Remarques : ${notes}` : ''
-      ].filter(Boolean).join('\n');
+        `Cotisation : ${fee} CHF`,
+        notes ? `Remarques : ${notes}` : '',
+      ]
+        .filter(Boolean)
+        .join('\n');
 
-      if (confirmationCard && confirmationDetails) {
-        confirmationDetails.innerHTML = `
-          <div class="alert alert-success">
-            <strong>Merci beaucoup, ${parentName} !</strong><br>
-            Votre demande d'adhésion pour l'année scolaire a bien été préparée pour votre enfant <strong>${studentName}</strong> (${studentGrade}).
-          </div>
-          <p>Pour confirmer votre inscription auprès du comité, veuillez cliquer ci-dessous pour transmettre automatiquement votre fiche par e-mail, ou effectuer directement votre versement de <strong>20 CHF</strong> avec la référence indiquée :</p>
-          <div style="margin: 1.5rem 0; display: flex; gap: 1rem; flex-wrap: wrap;">
-            <a href="mailto:contact@apeco-voirets.ch?subject=${encodeURIComponent("Adhésion APECO - " + studentName)}&body=${encodeURIComponent(emailBody)}" class="btn btn-primary">
-              ✉️ Envoyer ma demande par e-mail
-            </a>
-            <button type="button" class="btn btn-outline" onclick="window.print()">
-              🖨️ Imprimer le récapitulatif
-            </button>
-          </div>
-        `;
-        confirmationCard.style.display = 'block';
-        confirmationCard.scrollIntoView({ behavior: 'smooth' });
-        membershipForm.style.display = 'none';
-      }
+      const confirmationCard = document.getElementById('membership-confirmation');
+      const confirmationDetails = document.getElementById('confirmation-details');
+      if (!confirmationCard || !confirmationDetails) return;
+
+      const sendLink = el(
+        'a',
+        { href: mailtoUrl(membershipForm.dataset.mailto, `Adhésion APECO - ${studentName}`, emailBody), class: 'btn btn-primary' },
+        ['✉️ Envoyer ma demande par e-mail']
+      );
+      const printButton = el('button', { type: 'button', class: 'btn btn-outline' }, ['🖨️ Imprimer le récapitulatif']);
+      printButton.addEventListener('click', () => window.print());
+
+      confirmationDetails.replaceChildren(
+        el('div', { class: 'alert alert-success' }, [
+          el('strong', {}, [`Merci beaucoup, ${parentName} !`]),
+          el('br'),
+          `Votre demande d'adhésion pour ${studentName} (${studentGrade}) est prête.`,
+        ]),
+        el('p', {}, [
+          'Pour la transmettre au comité, cliquez ci-dessous : votre messagerie s\'ouvrira avec la demande déjà rédigée. ' +
+            'Le comité vous communiquera ensuite les modalités de paiement de la cotisation.',
+        ]),
+        el('div', { style: 'margin: 1.5rem 0; display: flex; gap: 1rem; flex-wrap: wrap;' }, [sendLink, printButton])
+      );
+      confirmationCard.style.display = 'block';
+      confirmationCard.scrollIntoView({ behavior: 'smooth' });
+      membershipForm.style.display = 'none';
     });
   }
 
-  // 4. Contact Form Handler
+  // 3. Contact Form
   const contactForm = document.getElementById('contact-form');
   if (contactForm) {
     contactForm.addEventListener('submit', (e) => {
@@ -115,12 +111,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const message = document.getElementById('contact-message').value.trim();
 
       if (!name || !email || !message) {
-        alert('Veuillez renseigner votre nom, e-mail et votre message.');
+        alert('Veuillez renseigner votre nom, votre e-mail et votre message.');
         return;
       }
 
-      const mailtoUrl = `mailto:contact@apeco-voirets.ch?subject=${encodeURIComponent("[APECO Voirets] " + (subject || "Contact"))}&body=${encodeURIComponent("De: " + name + " (" + email + ")\n\n" + message)}`;
-      window.location.href = mailtoUrl;
+      window.location.href = mailtoUrl(
+        contactForm.dataset.mailto,
+        `[APECO Voirets] ${subject || 'Contact'}`,
+        `De : ${name} (${email})\n\n${message}`
+      );
     });
   }
 });

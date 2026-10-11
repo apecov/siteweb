@@ -3,6 +3,50 @@
    Reminiscent of https://www.fapeo.ch/ but modern and simplified
    ========================================================================== */
 
+/* Alegreya Sans, self-hosted (SIL Open Font License, see static/fonts/OFL.txt) */
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('../fonts/alegreya-sans-latin-300-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/alegreya-sans-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/alegreya-sans-latin-400-italic.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('../fonts/alegreya-sans-latin-500-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../fonts/alegreya-sans-latin-700-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('../fonts/alegreya-sans-latin-800-normal.woff2') format('woff2');
+}
+
 /* 1. CSS Variables & Theme Setup */
 :root {
   --color-primary: #008ac5;         /* FAPEO Signature Blue */
@@ -196,7 +240,8 @@ main.site-content {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 0;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
 }
 
 .brand {
@@ -211,38 +256,9 @@ main.site-content {
 }
 
 .brand-logo {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-md);
-  background: linear-gradient(135deg, var(--color-primary) 0%, #00a4ea 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ffffff;
-  font-weight: 800;
-  font-size: 1.4rem;
-  box-shadow: var(--shadow-sm);
+  height: 64px;
+  width: auto;
   flex-shrink: 0;
-}
-
-.brand-text {
-  display: flex;
-  flex-direction: column;
-}
-
-.brand-title {
-  font-size: 1.7rem;
-  font-weight: 800;
-  color: var(--color-primary);
-  line-height: 1.1;
-  letter-spacing: -0.01em;
-}
-
-.brand-subtitle {
-  font-size: 0.95rem;
-  color: var(--color-text-muted);
-  font-weight: 500;
-  line-height: 1.2;
 }
 
 /* Main Navigation */
@@ -676,106 +692,6 @@ textarea.form-control {
   background-color: #fffbeb;
   border-left: 4px solid #f59e0b;
   color: #92400e;
-}
-
-/* Bank Details Box */
-.bank-box {
-  background: linear-gradient(135deg, #ffffff 0%, var(--color-primary-light) 100%);
-  border: 2px dashed var(--color-primary);
-  border-radius: var(--radius-md);
-  padding: 1.5rem;
-  margin: 1.5rem 0;
-}
-
-.bank-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.4rem 0;
-  border-bottom: 1px dotted var(--color-border-dark);
-}
-
-.bank-row:last-child {
-  border-bottom: none;
-}
-
-.bank-label {
-  font-weight: 700;
-  color: var(--color-text-muted);
-}
-
-.bank-value {
-  font-family: monospace;
-  font-weight: 700;
-  color: var(--color-primary-dark);
-  font-size: 1.05rem;
-}
-
-/* 13. Instagram Feed Widget */
-.ig-section {
-  margin-top: 2.5rem;
-}
-
-.ig-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.25rem;
-}
-
-.ig-feed-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.25rem;
-}
-
-.ig-card {
-  background: #ffffff;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  box-shadow: var(--shadow-sm);
-  display: flex;
-  flex-direction: column;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-}
-
-.ig-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.ig-card-header {
-  padding: 0.75rem 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--color-bg-alt);
-  font-size: 0.9rem;
-  color: var(--color-text-muted);
-}
-
-.ig-card-body {
-  padding: 1rem;
-  flex: 1 1 auto;
-}
-
-.ig-card-caption {
-  font-size: 0.98rem;
-  line-height: 1.45;
-  color: var(--color-text-main);
-  margin-bottom: 0.75rem;
-}
-
-.ig-card-tags {
-  font-size: 0.85rem;
-  color: var(--color-primary);
-}
-
-.ig-card-footer {
-  padding: 0.75rem 1rem;
-  background-color: var(--color-bg-page);
-  border-top: 1px solid var(--color-bg-alt);
-  text-align: right;
 }
 
 /* 14. Document Download Cards */

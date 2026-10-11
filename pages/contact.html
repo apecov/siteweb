@@ -1,25 +1,25 @@
 ---
-title: "Contact & Accès"
-description: "Coordonnées, formulaire de contact et plan d'accès de l'APECO Voirets."
+title: "Contact"
+description: "Coordonnées et formulaire de contact de l'APECO Voirets."
 ---
 <div class="container">
   <div style="margin-bottom: 2rem;">
-    <h1>Contact & Accès</h1>
+    <h1>Contact</h1>
     <p style="font-size: 1.2rem; color: var(--color-text-muted);">
       Une question, une suggestion ou besoin d'échanger avec le comité ? Écrivez-nous ou retrouvez-nous lors de nos réunions.
     </p>
   </div>
 
   <div class="grid-sidebar">
-    <!-- Contact Form -->
     <div>
       <div class="form-card">
         <h2 style="margin-top: 0; margin-bottom: 0.5rem;">Envoyer un message au comité</h2>
+        {{#if site.contact.email}}
         <p style="color: var(--color-text-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">
-          Remplissez ce formulaire pour nous transmettre votre message directement.
+          Ce formulaire prépare un e-mail dans votre messagerie, adressé au comité.
         </p>
 
-        <form id="contact-form">
+        <form id="contact-form" data-mailto="{{site.contact.email}}">
           <div class="form-group">
             <label class="form-label" for="contact-name">Votre nom et prénom <span class="required">*</span></label>
             <input type="text" id="contact-name" class="form-control" placeholder="ex. Jean Dupont" required>
@@ -46,10 +46,13 @@ description: "Coordonnées, formulaire de contact et plan d'accès de l'APECO Vo
             </button>
           </div>
         </form>
+        {{/if}}
+        {{#unless site.contact.email}}
+        <p>Le formulaire de contact sera bientôt disponible sur ce site.</p>
+        {{/unless}}
       </div>
     </div>
 
-    <!-- Contact Info & Coordinates -->
     <div>
       <div class="card">
         <h3 style="margin-top: 0;">Coordonnées de l'APECO</h3>
@@ -58,43 +61,27 @@ description: "Coordonnées, formulaire de contact et plan d'accès de l'APECO Vo
           Association des parents d'élèves du cycle d'orientation des Voirets
         </p>
         <p style="margin-bottom: 0.8rem;">
-          📍 <strong>Adresse postale & école :</strong><br>
+          📍 <strong>École :</strong><br>
           {{site.contact.school_name}}<br>
           {{site.contact.address}}<br>
-          {{site.contact.postal_code}} {{site.contact.city}}<br>
-          {{site.contact.canton}}
+          {{site.contact.postal_code}} {{site.contact.city}}
         </p>
-        <p style="margin-bottom: 0.8rem;">
-          📞 <strong>Téléphone :</strong><br>
-          <a href="tel:{{site.contact.phone}}">{{site.contact.phone}}</a>
-        </p>
+        {{#if site.contact.email}}
         <p style="margin-bottom: 0;">
           ✉️ <strong>Courriel :</strong><br>
           <a href="mailto:{{site.contact.email}}">{{site.contact.email}}</a>
         </p>
+        {{/if}}
       </div>
 
-      <!-- Public Transport / Access -->
-      <div class="card">
-        <h3 style="margin-top: 0;">Accès & Transports publics (TPG)</h3>
-        <p style="font-size: 0.95rem;">
-          Le Cycle d'orientation des Voirets est situé à Plan-les-Ouates, à proximité de la limite communale de Grand-Lancy.
-        </p>
-        <ul style="font-size: 0.95rem;">
-          <li><strong>Tram 15 / 17 :</strong> Arrêt <em>Grand-Lancy, Pontets</em> ou <em>Palettes</em></li>
-          <li><strong>Bus 22, 23, 42 :</strong> Arrêts <em>Voirets</em> ou <em>Commune</em></li>
-        </ul>
-      </div>
-
-      <!-- Federation Card -->
       <div class="card" style="background-color: var(--color-primary-light);">
         <h3 style="margin-top: 0; color: var(--color-primary-dark);">Fédération cantonale (FAPEO)</h3>
         <p style="font-size: 0.92rem;">
-          Pour les thématiques transversales cantonales (réformes scolaires, harcèlement, devoirs, Pédibus) :
+          Pour les thématiques cantonales (réformes scolaires, harcèlement, devoirs) :
         </p>
         <p style="font-size: 0.92rem; margin-bottom: 0.5rem;">
           Rue de Saint-Jean 12, 1203 Genève<br>
-          Tél : 022 344 22 55
+          Tél. : 022 344 22 55
         </p>
         <a href="{{site.social.fapeo_website}}" target="_blank" rel="noopener noreferrer" style="font-weight: 700; font-size: 0.92rem;">
           Visiter le site www.fapeo.ch &nearr;

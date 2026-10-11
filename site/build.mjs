@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync, mkdirSync, rmSync, cpSync, existsSync, rea
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import MarkdownIt from 'markdown-it';
-import { escapeHtml, formatFrenchDate, loadCollection, readFrontmatter } from './lib/content.mjs';
+import { escapeHtml, loadCollection, readFrontmatter } from './lib/content.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const ROOT = path.resolve(__dirname, '..');
@@ -12,7 +12,7 @@ export const ROOT = path.resolve(__dirname, '..');
 const COLLECTIONS = {
   news: { dir: 'nouvelles', type: 'news', nav: 'nouvelles.html', back: 'Retour aux actualités' },
   events: { dir: 'evenements', type: 'event', nav: 'activites.html', back: 'Retour aux activités' },
-  reports: { dir: 'pv', type: 'pv', nav: 'statuts.html', back: 'Retour aux statuts & PV' },
+  reports: { dir: 'pv', type: 'pv', nav: 'statuts.html', back: 'Retour aux statuts et PV' },
 };
 
 function depthPrefix(outRelPath) {
@@ -24,8 +24,10 @@ function isRelativeUrl(href) {
   return href && !/^([a-z][a-z0-9+.-]*:|\/|#)/i.test(href);
 }
 
-function buildMarkdownRenderer() {
-  const md = new MarkdownIt({ html: true, linkify: true, typographer: true });
+// `pages/` are written by maintainers and may embed HTML layout; `content/`
+// can come from converted Word documents, so raw HTML is not allowed there.
+function buildMarkdownRenderer({ html }) {
+  const md = new MarkdownIt({ html, linkify: true });
 
   // Content is written with links relative to the site root (`statuts.html`,
   // `static/docs/x.pdf`) wherever the page ends up; rewrite them against
@@ -47,13 +49,32 @@ function buildMarkdownRenderer() {
   return md;
 }
 
-/** Replaces `{{site.a.b}}` with values from data/site.json. */
+function siteValue(site, key, whole) {
+  const value = key.split('.').reduce((obj, k) => (obj == null ? undefined : obj[k]), site);
+  if (value === undefined) throw new Error(`Unknown placeholder ${whole}`);
+  return value;
+}
+
+/**
+ * Replaces `{{site.a.b}}` with values from data/site.json, after resolving
+ * `{{#if site.a.b}}…{{/if}}` and `{{#unless site.a.b}}…{{/unless}}` blocks
+ * (not nestable) on whether that value is empty.
+ */
 function fillSiteValues(text, site) {
-  return text.replace(/\{\{\s*site\.([\w.]+)\s*\}\}/g, (whole, key) => {
-    const value = key.split('.').reduce((obj, k) => (obj == null ? undefined : obj[k]), site);
-    if (value === undefined) throw new Error(`Unknown placeholder ${whole}`);
-    return escapeHtml(value);
-  });
+  return text
+    .replace(/\{\{#(if|unless) site\.([\w.]+)\}\}([\s\S]*?)\{\{\/\1\}\}/g, (whole, kind, key, inner) =>
+      Boolean(siteValue(site, key, whole)) === (kind === 'if') ? inner : ''
+    )
+    .replace(/\{\{\s*site\.([\w.]+)\s*\}\}/g, (whole, key) => escapeHtml(siteValue(site, key, whole)));
+}
+
+// Emoji used as icons are decorative: hide them from screen readers. Only
+// text between tags is touched, never attribute values.
+const EMOJI = /(?:\p{Regional_Indicator}{2}|\p{Extended_Pictographic}\uFE0F?(?:\u200D\p{Extended_Pictographic}\uFE0F?)*)/gu;
+function hideEmoji(html) {
+  return html.replace(/>([^<]+)</g, (whole, text) =>
+    `>${text.replace(EMOJI, (e) => `<span aria-hidden="true">${e}</span>`)}<`
+  );
 }
 
 /** Replaces `{{name}}` with pre-rendered HTML components. */
@@ -101,7 +122,7 @@ function pastEventCard(event, base) {
   <div class="card-meta"><span class="badge badge-blue">${escapeHtml(event.dateFormatted)}</span> ${location}</div>
   <h3 class="card-title"><a href="${href}">${escapeHtml(event.title)}</a></h3>
   <p>${escapeHtml(event.summary)}</p>
-  <div style="margin-top: 0.75rem;"><a href="${href}" style="font-weight: 700; font-size: 0.95rem;">Voir le compte-rendu &rarr;</a></div>
+  <div style="margin-top: 0.75rem;"><a href="${href}" style="font-weight: 700; font-size: 0.95rem;">Voir l'événement &rarr;</a></div>
 </div>`;
 }
 
@@ -126,22 +147,8 @@ function emptyCard(text) {
   return `<div class="card"><p>${text}</p></div>`;
 }
 
-function instagramCard(post, site) {
-  const tags = post.tags?.length ? `<div class="ig-card-tags">${escapeHtml(post.tags.join(' '))}</div>` : '';
-  return `<div class="ig-card">
-  <div class="ig-card-header"><span>📷 @apeco_voirets</span><span>${escapeHtml(post.dateFormatted)}</span></div>
-  <div class="ig-card-body">
-    <p class="ig-card-caption">${escapeHtml(post.caption)}</p>
-    ${tags}
-  </div>
-  <div class="ig-card-footer">
-    <a href="${escapeHtml(post.permalink || site.social.instagram)}" target="_blank" rel="noopener noreferrer" style="font-weight:700; font-size:0.9rem;">Voir sur Instagram &nearr;</a>
-  </div>
-</div>`;
-}
-
 function buildComponents(data, base) {
-  const { site, news, upcoming, past, reports, instagram } = data;
+  const { news, upcoming, past, reports } = data;
   return {
     upcoming_events_home: upcoming.length
       ? upcoming
@@ -150,19 +157,21 @@ function buildComponents(data, base) {
           .join('\n')
       : emptyCard('Aucun événement programmé pour le moment. Consultez nos actualités ou contactez le comité !'),
 
-    latest_news_home: news
-      .slice(0, 3)
-      .map((p) => newsCard(p, base, { heading: 'h3', withAuthor: false, categoryBadge: 'badge-orange', linkLabel: 'Lire la suite' }))
-      .join('\n'),
+    latest_news_home: news.length
+      ? news
+          .slice(0, 3)
+          .map((p) => newsCard(p, base, { heading: 'h3', withAuthor: false, categoryBadge: 'badge-orange', linkLabel: 'Lire la suite' }))
+          .join('\n')
+      : emptyCard('Aucune actualité publiée pour le moment.'),
 
     upcoming_events: upcoming.length
       ? `<div class="grid-2">\n${upcoming.map((e) => upcomingEventCard(e, base)).join('\n')}\n</div>`
       : emptyCard(
-          "Aucun événement n'est programmé dans l'immédiat. Rejoignez notre liste de diffusion ou notre Instagram pour ne rien manquer !"
+          "Aucun événement n'est programmé dans l'immédiat. Revenez consulter cette page prochainement !"
         ),
 
     past_events: past.length
-      ? `<section>\n<h2>🏛️ Activités passées & Archives</h2>\n<div class="grid-2">\n${past
+      ? `<section>\n<h2>🏛️ Activités passées</h2>\n<div class="grid-2">\n${past
           .map((e) => pastEventCard(e, base))
           .join('\n')}\n</div>\n</section>`
       : '',
@@ -184,11 +193,6 @@ function buildComponents(data, base) {
           )
           .join('\n')
       : '<p style="font-size: 0.9rem;">Aucun PV archivé pour le moment.</p>',
-
-    instagram_feed: `<div class="ig-feed-grid">\n${instagram
-      .slice(0, 3)
-      .map((p) => instagramCard(p, site))
-      .join('\n')}\n</div>`,
   };
 }
 
@@ -208,13 +212,15 @@ function renderNav(site, currentNav, base) {
 function renderLayout(layout, { site, out, nav, title, description, content, year }) {
   const base = depthPrefix(out);
   const fullTitle = `${title ? `${title} - ` : ''}${site.title} | ${site.full_title}`;
-  return fillSiteValues(layout, site)
+  const html = fillSiteValues(layout, site)
     .replaceAll('{{TITLE}}', escapeHtml(fullTitle))
     .replaceAll('{{DESCRIPTION}}', escapeHtml(description || site.description))
     .replaceAll('{{BASE}}', base)
     .replaceAll('{{YEAR}}', String(year))
     .replace('{{NAV}}', renderNav(site, nav, base))
     .replace('{{CONTENT}}', () => content);
+  const bodyStart = html.indexOf('<body>');
+  return html.slice(0, bodyStart) + hideEmoji(html.slice(bodyStart));
 }
 
 function detailHeader(item, collection) {
@@ -232,14 +238,14 @@ function detailHeader(item, collection) {
 </div>`;
 }
 
-function renderDetail(md, item, collection, base) {
+function renderDetail(md, item, collection, base, site) {
   const { nav, back } = COLLECTIONS[collection];
   const body = md.render(item.markdown, { base });
   const footer =
     collection === 'news'
       ? `<div style="margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
   <a href="${base}nouvelles.html" class="btn btn-outline btn-sm">&larr; Retour à la liste</a>
-  <a href="${base}adhesion.html" class="btn btn-secondary btn-sm">Rejoindre l'APECO (20 CHF) &rarr;</a>
+  <a href="${base}adhesion.html" class="btn btn-secondary btn-sm">Rejoindre l'APECO (${escapeHtml(site.membership.annual_fee_chf)} CHF) &rarr;</a>
 </div>`
       : '';
   return `<div class="container">
@@ -275,23 +281,19 @@ export function build({ root = ROOT, outDir = path.join(root, '_site'), today } 
   writeFileSync(path.join(outDir, '.nojekyll'), '');
 
   const site = JSON.parse(readFileSync(path.join(root, 'data/site.json'), 'utf8'));
-  const igPath = path.join(root, 'data/instagram_feed.json');
-  const instagram = existsSync(igPath) ? JSON.parse(readFileSync(igPath, 'utf8')) : [];
-  for (const post of instagram) post.dateFormatted = formatFrenchDate(post.date);
 
   const items = Object.fromEntries(
     Object.entries(COLLECTIONS).map(([key, c]) => [key, loadCollection(root, c.dir, c.type)])
   );
   const data = {
-    site,
-    instagram,
     news: items.news,
     reports: items.reports,
     upcoming: items.events.filter((e) => e.date >= today).reverse(), // soonest first
     past: items.events.filter((e) => e.date < today),
   };
 
-  const md = buildMarkdownRenderer();
+  const mdPages = buildMarkdownRenderer({ html: true });
+  const mdContent = buildMarkdownRenderer({ html: false });
   const layout = readFileSync(path.join(root, 'site/templates/layout.html'), 'utf8');
 
   // Top-level pages: `pages/<name>.html` (raw HTML) or `pages/<name>.md`.
@@ -303,7 +305,7 @@ export function build({ root = ROOT, outDir = path.join(root, '_site'), today } 
     const base = depthPrefix(out);
     const { data: fm, content } = readFrontmatter(path.join(pagesDir, name));
     let body = fillSiteValues(content, site).replaceAll('{{BASE}}', base);
-    if (ext === '.md') body = md.render(body, { base });
+    if (ext === '.md') body = mdPages.render(body, { base });
     body = fillComponents(body, buildComponents(data, base));
     writePage(
       outDir,
@@ -324,7 +326,7 @@ export function build({ root = ROOT, outDir = path.join(root, '_site'), today } 
           nav: COLLECTIONS[collection].nav,
           title: item.title,
           description: item.summary,
-          content: renderDetail(md, item, collection, base),
+          content: renderDetail(mdContent, item, collection, base, site),
           year,
         })
       );

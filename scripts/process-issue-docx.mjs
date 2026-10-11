@@ -99,8 +99,23 @@ export function parseDateFromString(text) {
   return null;
 }
 
-export async function convertDocxToMarkdown(buffer) {
-  const result = await mammoth.convertToHtml({ buffer });
+// Images in the document are written to static/images/documents/ (instead of
+// mammoth's default base64 data URIs, which make multi-MB Markdown files).
+export const IMAGE_DIR = path.join('static', 'images', 'documents');
+
+export async function convertDocxToMarkdown(buffer, { root = ROOT, imagePrefix } = {}) {
+  const options = {};
+  if (imagePrefix) {
+    let count = 0;
+    options.convertImage = mammoth.images.imgElement(async (image) => {
+      const ext = (image.contentType.split('/')[1] || 'bin').replace('jpeg', 'jpg').replace(/[^\w]/g, '');
+      const rel = path.join(IMAGE_DIR, `${imagePrefix}-${++count}.${ext}`);
+      mkdirSync(path.join(root, IMAGE_DIR), { recursive: true });
+      writeFileSync(path.join(root, rel), await image.readAsBuffer());
+      return { src: rel.split(path.sep).join('/') };
+    });
+  }
+  const result = await mammoth.convertToHtml({ buffer }, options);
   for (const msg of result.messages) console.error(`[mammoth] ${msg.type}: ${msg.message}`);
   const turndown = new TurndownService({ headingStyle: 'atx', bulletListMarker: '-', emDelimiter: '*' });
   return turndown.turndown(result.value).trim();
@@ -160,7 +175,7 @@ export async function processIssue(event, { root = ROOT, token, fetchDocx = down
     return null;
   }
 
-  const markdown = await convertDocxToMarkdown(await fetchDocx(links[0].url, token));
+  const markdown = await convertDocxToMarkdown(await fetchDocx(links[0].url, token), { root, imagePrefix: `issue-${issue.number}` });
   const type = typeFromFormAnswer(form['Type de document']) || detectDocumentType(title, labels, markdown);
   const date =
     parseDateFromString(form['Date concernée'] || '') ||
@@ -192,7 +207,7 @@ async function main() {
   if (values.file) {
     if (!TARGETS[values.type]) throw new Error(`--type must be one of ${Object.keys(TARGETS).join(', ')}`);
     const title = values.title || path.basename(values.file, '.docx').replace(/-/g, ' ');
-    const markdown = await convertDocxToMarkdown(readFileSync(values.file));
+    const markdown = await convertDocxToMarkdown(readFileSync(values.file), { imagePrefix: slugify(title) || 'document' });
     const date = values.date || parseDateFromString(`${title} ${markdown.slice(0, 300)}`) || new Date().toISOString().slice(0, 10);
     writePage({ title, date, type: values.type, markdown });
     return;

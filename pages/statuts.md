@@ -1,27 +1,17 @@
 ---
-title: "Statuts & Procès-verbaux d'AG"
+title: "Statuts et procès-verbaux"
 description: "Statuts officiels et procès-verbaux de l'APECO Voirets."
 ---
 <div class="container">
 <div style="margin-bottom: 2rem;">
-<h1>Statuts & Procès-verbaux d'Assemblée Générale</h1>
+<h1>Statuts et procès-verbaux d'assemblée générale</h1>
 <p style="font-size: 1.2rem; color: var(--color-text-muted);">
 L'Association des parents d'élèves du cycle d'orientation des Voirets (APECO Voirets) est régie par les articles 60 et suivants du Code civil suisse.
 </p>
 </div>
 <div class="grid-sidebar">
 <div>
-<div class="doc-card" style="border: 2px solid var(--color-primary); background-color: var(--color-primary-light);">
-<div class="doc-info">
-<div class="doc-icon">PDF</div>
-<div>
-<div class="doc-title">Document officiel signé : Statuts APECO Voirets (Août 2025)</div>
-<div class="doc-meta">Approuvés par l'Assemblée générale constitutive du 25 août 2025 à Lancy</div>
-</div>
-</div>
-<a href="{{BASE}}static/docs/Statuts_APECO_Voirets_Aout_2025.pdf" class="btn btn-primary" download>⬇️ Télécharger le PDF officiel</a>
-</div>
-<article class="markdown-body" style="margin-top: 1.5rem;">
+<article class="markdown-body">
 
 ## Statuts officiels de l'APECO VOIRETS
 
@@ -75,13 +65,15 @@ Chaque membre a une voix, les décisions sont prises à la majorité simple, à 
 
 Les membres du Comité n'ont pas le droit de vote pour la décharge des activités de l'APECO Voirets. Ils peuvent cependant se prononcer sur les autres sujets.
 
-L'AG élit le Comité ainsi que le(s) vérificateur(s) des comptes. L'AG approuve les rapports d'activités du/de la trésorier/ère et des vérificateurs des comptes et leur en donne décharge. L'AG fixe le montant des cotisations. L'AG se prononce sur les recours d'exclusion d'un membre pour de justes motifs. L'AG se prononce sur la modification des statuts à une majorité des 2/3 des membres présents. L'AG peut décider de la dissolution de l'APECO Voirets par 2/3 des membres.
+L'AG élit le Comité ainsi que le(s) vérificateur(s) des comptes. L'AG approuve les rapports d'activités du/de la trésorier/ère et des vérificateurs des comptes et leur en donne décharge. L'AG fixe le montant des cotisations. L'AG se prononce sur les recours d'exclusion d'un membre pour de justes motifs. L'AG se prononce sur la modification des statuts à une majorité des 2/3 des membres présents. L'AG peut décider de la dissolution de l'APECO Voirets par ¾ des membres.
 
 ### Comité
 
 **Art. 8 :** Le comité est formé de 3 à 15 membres élus pour une année par l'assemblée générale. Il répartit les différentes charges qui lui incombent en s’entourant, au besoin, de toute personne utile. La présidence peut être partagée par deux co-président-e-s. Le comité se réunit selon les nécessités, mais au moins 4 fois par année scolaire. Les séances du Comité sont ouvertes à tous les membres. Si nécessaire, le Comité peut aussi accepter des nouveaux membres en cours de mandat.
 
-Le Comité est compétent pour toutes les affaires ne relevant pas expressément des compétences de l'AG et entrant dans le cadre des buts déterminés sous l'article 4. Les décisions du comité sont prises à la majorité des membres présents. En cas d'égalité des voix, celle du (de la) président(e) compte double. En cas d'égalité s’il y a deux co-président-e-s, la décision sera remise à la prochaine séance.
+Le Comité est compétent pour toutes les affaires ne relevant pas expressément des compétences de l'AG et entrant dans le cadre des buts déterminés sous l'article 2. Les décisions du comité sont prises à la majorité des membres présents. En cas d'égalité des voix, celle du (de la) président(e) compte double. En cas d'égalité s’il y a deux co-président-e-s, la décision sera remise à la prochaine séance.
+
+*Note : texte tel qu'adopté ; les buts de l'association figurent à l'article 4.*
 
 ### Démission du comité
 
@@ -122,7 +114,7 @@ Retrouvez les comptes-rendus et procès-verbaux des assemblées générales ordi
 <div class="card" style="background-color: var(--color-secondary-light); border-color: var(--color-secondary);">
 <h3 style="margin-top:0; color: var(--color-secondary-dark);">Participer à la vie de l'APECO</h3>
 <p style="font-size: 0.95rem;">Tous les membres à jour de cotisation ont le droit de vote lors de l'assemblée générale et peuvent présenter leur candidature au comité.</p>
-<a href="{{BASE}}adhesion.html" class="btn btn-secondary btn-block">Adhérer (20 CHF) &rarr;</a>
+<a href="{{BASE}}adhesion.html" class="btn btn-secondary btn-block">Adhérer ({{site.membership.annual_fee_chf}} CHF) &rarr;</a>
 </div>
 </div>
 </div>

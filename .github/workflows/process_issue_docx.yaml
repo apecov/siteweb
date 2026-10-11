@@ -37,6 +37,7 @@ jobs:
       # Issue-controlled values go through env vars, never ${{ }} inside the
       # script, so a crafted issue title cannot inject shell commands.
       - name: Commit and push the generated page
+        id: commit
         if: steps.process.outputs.created_file != ''
         env:
           CREATED_FILE: ${{ steps.process.outputs.created_file }}
@@ -47,26 +48,34 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -- "$CREATED_FILE"
+          if [ -d static/images/documents ]; then git add -- static/images/documents; fi
+          # Re-running on an already published issue (e.g. when a label is
+          # added) produces the same file: nothing to commit, nothing to do.
+          if git diff --cached --quiet; then
+            echo "Page already up to date."
+            exit 0
+          fi
           git commit -m "Publication $DOC_TYPE : $DOC_TITLE (issue #$ISSUE_NUM)"
           git push origin HEAD:${{ github.event.repository.default_branch }}
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
 
       # Pushes made with GITHUB_TOKEN do not trigger other workflows, so start
       # the deployment explicitly.
       - name: Deploy the site
-        if: steps.process.outputs.created_file != ''
+        if: steps.commit.outputs.pushed == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh workflow run pages.yml --ref "${{ github.event.repository.default_branch }}"
 
-      - name: Comment on the issue
-        if: steps.process.outputs.created_file != ''
+      - name: Comment on and close the issue
+        if: steps.commit.outputs.pushed == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUM: ${{ steps.process.outputs.issue_number }}
           CREATED_FILE: ${{ steps.process.outputs.created_file }}
           DOC_TYPE: ${{ steps.process.outputs.doc_type }}
         run: |
-          gh issue comment "$ISSUE_NUM" --body "✅ **Document converti et publié avec succès !**
+          gh issue close "$ISSUE_NUM" --comment "✅ **Document converti et publié avec succès !**
 
           Le document Word a été converti en Markdown et intégré au site :
           - **Fichier créé :** \`$CREATED_FILE\`

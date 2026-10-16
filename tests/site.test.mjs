@@ -528,3 +528,113 @@ test('the preview style depends on the Thunderforest key', () => {
   assert.equal(chooseStyle({}), 'opnvkarte');
   assert.equal(chooseStyle({ THUNDERFOREST_API_KEY: 'x' }), 'transport');
 });
+
+const IDEA =
+  '---\ntitle: "Café des parents"\nprovisional: true\nperiod: "Printemps 2026"\ndate: "2026-03-01"\nsummary: "Un autre café."\nsource_issue: "#9"\n---\n\nUne idée.\n';
+
+function buildWith(t, files, today = '2025-10-01') {
+  const root = fixtureRoot(t);
+  for (const [rel, text] of Object.entries(files)) writeFileSync(path.join(root, rel), text);
+  const out = path.join(root, '_site');
+  build({ root, outDir: out, today });
+  return (p) => readFileSync(path.join(out, p), 'utf8');
+}
+
+test('activities « en projet » are listed apart, with their period and no Event JSON-LD', (t) => {
+  const read = buildWith(t, {
+    'content/evenements/projet-cafe-des-parents.md': IDEA,
+    'content/evenements/projet-ecrans.md': '---\ntitle: "Écrans"\nprovisional: true\nsummary: "Plus tard."\n---\n\nIdée.\n',
+  });
+  const activites = read('activites.html');
+  const [agenda, rest] = activites.split('En projet</h2>');
+  assert.ok(rest, 'an « En projet » section');
+  assert.doesNotMatch(agenda, /projet-cafe-des-parents/, 'not in the agenda');
+  const planned = rest.split('Activités passées')[0];
+  // Ordered by approximate date, undated last; the period is shown, not the date.
+  assert.ok(planned.indexOf('projet-cafe-des-parents.html') < planned.indexOf('projet-ecrans.html'));
+  assert.match(planned, /Printemps 2026/);
+  assert.match(planned, /Date à définir/);
+  assert.doesNotMatch(rest.split('En projet</h2>')[0].split('Activités passées')[1] || '', /projet-/, 'not in the past activities');
+
+  const page = read('evenements/projet-cafe-des-parents.html');
+  assert.match(page, /Activité en projet/);
+  assert.doesNotMatch(page, /application\/ld\+json/);
+});
+
+test('without ideas there is no « En projet » section', (t) => {
+  assert.doesNotMatch(buildWith(t, {})('activites.html'), /En projet/);
+});
+
+test('a planned activity takes the place of the idea it replaces', (t) => {
+  const read = buildWith(t, {
+    'content/evenements/projet-cafe-des-parents.md': IDEA,
+    'content/evenements/2026-03-12-cafe-des-parents.md':
+      '---\ntitle: "Café des parents de printemps"\ndate: "2026-03-12"\nreplaces: "evenements/projet-cafe-des-parents.html"\nsummary: "Café."\n---\n\nTexte.\n',
+  });
+  const activites = read('activites.html');
+  assert.doesNotMatch(activites, /En projet/);
+  assert.match(activites, /2026-03-12-cafe-des-parents\.html/);
+  // The idea's address leads to the planned activity.
+  const old = read('evenements/projet-cafe-des-parents.html');
+  assert.match(old, /<meta http-equiv="refresh" content="0; url=\.\.\/evenements\/2026-03-12-cafe-des-parents\.html">/);
+  assert.match(old, /maintenant planifiée/);
+});
+
+/** The body of the « Proposer une activité en projet » form. */
+function ideaBody({ period = 'Printemps 2027', date = '', location = '', description = 'Un nouveau café.' } = {}) {
+  return [
+    ['Période envisagée', period],
+    ['Date approximative', date],
+    ['Lieu', location],
+    ['Description', description],
+  ]
+    .map(([label, value]) => `### ${label}\n\n${value || '_No response_'}`)
+    .join('\n\n');
+}
+
+test('an idea issue becomes an activity « en projet »', async (t) => {
+  const root = tempDir(t);
+  const publish = (number, body) => processIssue({ issue: { number, title: '[En projet] : Café des parents', labels: [], body } }, { root });
+  const result = await publish(9, ideaBody({ date: '01.03.2027', location: 'CO des Voirets', description: 'Un café.\n\nDétails à venir.' }));
+  assert.equal(result.type, 'projet');
+  assert.equal(result.page, 'evenements/projet-cafe-des-parents.html');
+  const { data, content } = (await import('gray-matter')).default(readFileSync(path.join(root, result.file), 'utf8'));
+  assert.equal(data.provisional, true);
+  assert.equal(data.period, 'Printemps 2027');
+  assert.equal(data.date, '2027-03-01');
+  assert.equal(data.location, 'CO des Voirets');
+  assert.equal(data.summary, 'Un café.');
+  assert.equal(data.source_issue, '#9');
+  assert.match(content, /Détails à venir\./);
+
+  // Editing it rewrites the same page; another idea with the same title gets its own.
+  assert.equal((await publish(9, ideaBody())).page, 'evenements/projet-cafe-des-parents.html');
+  assert.equal((await publish(11, ideaBody())).page, 'evenements/projet-cafe-des-parents-11.html');
+  // An idea needs a description.
+  assert.equal(await publish(12, ideaBody({ description: '' })), null);
+});
+
+test('a Word announcement can replace an activity « en projet »', async (t) => {
+  const root = tempDir(t);
+  mkdirSync(path.join(root, 'content/evenements'), { recursive: true });
+  writeFileSync(path.join(root, 'content/evenements/projet-cafe-des-parents.md'), IDEA);
+  const publish = (replaces) =>
+    processIssue(
+      { issue: { number: 20, title: 'Café des parents', labels: [], body: `### Remplace une activité en projet\n\n${replaces}\n\n${formBody()}` } },
+      { root, fetchDocx: async () => ANNONCE }
+    );
+  const front = async (file) => (await import('gray-matter')).default(readFileSync(path.join(root, file), 'utf8')).data;
+
+  for (const answer of ['#9', '9', 'https://github.com/apecov/siteweb/issues/9', 'https://www.apecov.ch/evenements/projet-cafe-des-parents.html']) {
+    const result = await publish(answer);
+    assert.equal((await front(result.file)).replaces, 'projet-cafe-des-parents', answer);
+    assert.equal(result.replacedPage, 'evenements/projet-cafe-des-parents.html');
+    assert.equal(result.replacedIssue, '9');
+    assert.equal(result.replaceMissing, '');
+  }
+  const missing = await publish('#99');
+  assert.equal((await front(missing.file)).replaces, undefined);
+  assert.equal(missing.replaceMissing, '#99');
+  // The idea itself is kept: the build hides it and redirects its page.
+  assert.ok(existsSync(path.join(root, 'content/evenements/projet-cafe-des-parents.md')));
+});

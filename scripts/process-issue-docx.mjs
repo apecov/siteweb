@@ -1,5 +1,7 @@
 // Converts a Word document (.docx) attached to a GitHub issue into a Markdown
-// page under content/evenements/ or content/pv/.
+// page under content/evenements/ or content/pv/, and an issue made with the
+// « Proposer une activité en projet » form into an activity « en projet »
+// (content/evenements/projet-<slug>.md).
 //
 //   node scripts/process-issue-docx.mjs --event-path "$GITHUB_EVENT_PATH"
 //   node scripts/process-issue-docx.mjs --file doc.docx --title "Titre" --type event --date 2025-11-20
@@ -205,6 +207,61 @@ export function writePage({ root = ROOT, title, date, type, markdown, summary, e
 }
 
 /**
+ * Writes an activity « en projet » and returns its path (relative to `root`).
+ * Two ideas with the same title (another café des parents) get distinct files.
+ */
+export function writeProvisionalPage({ root = ROOT, title, period, date, location, markdown, summary, issueNumber }) {
+  const dir = path.join(root, 'content', TARGETS.event.dir);
+  let slug = `projet-${slugify(title) || 'activite'}`;
+  if (existsSync(path.join(dir, `${slug}.md`))) slug += `-${issueNumber}`;
+  const rel = path.join('content', TARGETS.event.dir, `${slug}.md`);
+  const fm = {
+    title,
+    provisional: true,
+    period,
+    date,
+    type: 'event',
+    category: 'En projet',
+    summary: summary || summaryFrom(markdown),
+    location,
+    author: 'APECO Voirets',
+    source_issue: `#${issueNumber}`,
+  };
+  const frontmatter = Object.entries(fm)
+    .filter(([, v]) => v !== undefined && v !== '' && v !== null)
+    .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
+    .join('\n');
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(path.join(root, rel), `---\n${frontmatter}\n---\n\n${markdown}\n`);
+  console.log(`Created ${rel}`);
+  return rel;
+}
+
+/**
+ * Finds the activity « en projet » named in the « Remplace une activité en
+ * projet » field: the number of the issue that proposed it (`#12`, `12`, or
+ * the issue's address) or the address of its page. Returns `{ slug, issue }`
+ * (`issue`: that issue's number, or '') or null when there is no such idea.
+ */
+export function findProvisional(root, answer) {
+  const text = String(answer || '').trim();
+  if (!text) return null;
+  const dir = path.join(root, 'content', TARGETS.event.dir);
+  if (!existsSync(dir)) return null;
+  const ideas = readdirSync(dir)
+    .filter((n) => n.endsWith('.md'))
+    .map((name) => ({ slug: name.replace(/\.md$/, ''), data: readFrontmatter(path.join(dir, name)).data }))
+    .filter((idea) => idea.data.provisional === true);
+  const issue = text.match(/^#?(\d+)$/) || text.match(/\/issues\/(\d+)/);
+  const page = text.match(/([\w-]+)(?:\.html|\.md)?\/?$/);
+  const idea = issue
+    ? ideas.find((i) => i.data.source_issue === `#${issue[1]}`)
+    : page && ideas.find((i) => i.slug === page[1]);
+  if (!idea) return null;
+  return { slug: idea.slug, issue: String(idea.data.source_issue || '').replace(/^#/, '') };
+}
+
+/**
  * Removes the page and images an earlier run created for this issue, so that
  * editing the issue (new title, date or document) replaces the page instead
  * of adding a second one.
@@ -239,10 +296,11 @@ export async function processIssue(
   if (!issue) throw new Error("No 'issue' object in event payload");
 
   const title = String(issue.title || '')
-    .replace(/^\[Publication\]\s*:?\s*/i, '')
+    .replace(/^\[(Publication|En projet)\]\s*:?\s*/i, '')
     .trim();
   const labels = (issue.labels || []).map((l) => (typeof l === 'string' ? l : l.name || ''));
   const form = parseIssueForm(issue.body);
+  if ('Période envisagée' in form) return processProvisional(issue, title, form, root);
 
   const links = extractDocxUrls(form['Document Word (.docx)'] || issue.body);
   if (links.length === 0) {
@@ -257,6 +315,10 @@ export async function processIssue(
     stripLeadingTitle(await convertDocxToMarkdown(docx, { root, imagePrefix: `issue-${issue.number}` }), pageTitle)
   );
   const type = typeFromFormAnswer(form['Type de document']) || detectDocumentType(title, labels, markdown);
+  // A planned activity can take the place of an activity « en projet ».
+  const replacesAnswer = type === 'event' ? (form['Remplace une activité en projet'] || '').trim() : '';
+  const replaced = findProvisional(root, replacesAnswer);
+  if (replacesAnswer && !replaced) console.warn(`No activity « en projet » matches: ${replacesAnswer}`);
   const date =
     parseDateFromString(form['Date'] || form['Date concernée'] || '') ||
     parseDateFromString(`${title} ${markdown.slice(0, 300)}`) ||
@@ -293,11 +355,54 @@ export async function processIssue(
       location: form['Lieu'] || '',
       address,
       geo,
+      replaces: replaced?.slug,
       source_issue: `#${issue.number}`,
     },
   });
-  const page = file.replace(/^content[\\/]/, '').replace(/\.md$/, '.html').split(path.sep).join('/');
-  return { file, page, type, title: pageTitle, issueNumber: issue.number };
+  return {
+    file,
+    page: pageOf(file),
+    type,
+    title: pageTitle,
+    issueNumber: issue.number,
+    replacedPage: replaced ? `${TARGETS.event.dir}/${replaced.slug}.html` : '',
+    replacedIssue: replaced?.issue || '',
+    replaceMissing: replacesAnswer && !replaced ? replacesAnswer : '',
+  };
+}
+
+function pageOf(file) {
+  return file.replace(/^content[\\/]/, '').replace(/\.md$/, '.html').split(path.sep).join('/');
+}
+
+/** The first paragraph of an idea's description, however short. */
+function ideaSummary(markdown) {
+  const paragraph = markdown.split(/\n\s*\n/).find((p) => p.trim() && !/^(#|\||!\[)/.test(p.trim())) || '';
+  const text = paragraph.replace(/^[-*]\s+/gm, '').replace(/[*_`]/g, '').replace(/\s+/g, ' ').trim();
+  return text.length > 200 ? `${text.slice(0, 197)}...` : text;
+}
+
+/** An issue made with the « Proposer une activité en projet » form. */
+function processProvisional(issue, title, form, root) {
+  const markdown = demoteHeadings((form['Description'] || '').trim());
+  const period = (form['Période envisagée'] || '').replace(/\s+/g, ' ').trim();
+  if (!markdown) {
+    console.log(`No description in issue #${issue.number}`);
+    return null;
+  }
+  removePreviousOutput(root, issue.number);
+  const pageTitle = title || `Activité ${issue.number}`;
+  const file = writeProvisionalPage({
+    root,
+    title: pageTitle,
+    period,
+    date: parseDateFromString(form['Date approximative'] || '') || '',
+    location: (form['Lieu'] || '').trim(),
+    markdown,
+    summary: ideaSummary(markdown),
+    issueNumber: issue.number,
+  });
+  return { file, page: pageOf(file), type: 'projet', title: pageTitle, issueNumber: issue.number };
 }
 
 function setOutputs(outputs) {
@@ -333,7 +438,16 @@ async function main() {
   if (!eventPath) throw new Error('Pass --event-path (or set GITHUB_EVENT_PATH) or --file');
   const result = await processIssue(JSON.parse(readFileSync(eventPath, 'utf8')), { token: process.env.GITHUB_TOKEN });
   if (result) {
-    setOutputs({ created_file: result.file, page: result.page, doc_type: result.type, doc_title: result.title, issue_number: result.issueNumber });
+    setOutputs({
+      created_file: result.file,
+      page: result.page,
+      doc_type: result.type,
+      doc_title: result.title,
+      issue_number: result.issueNumber,
+      replaced_page: result.replacedPage || '',
+      replaced_issue: result.replacedIssue || '',
+      replace_missing: result.replaceMissing || '',
+    });
   }
 }
 

@@ -487,6 +487,11 @@ main.site-content {
   color: #b76e00;
 }
 
+/* An activity « en projet »: not fixed yet. */
+.card-planned {
+  border-style: dashed;
+}
+
 /* 9. Grid Systems */
 .grid-2 {
   display: grid;

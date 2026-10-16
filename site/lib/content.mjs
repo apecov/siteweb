@@ -66,11 +66,21 @@ export function loadCollection(root, subdir, defaultType) {
       const slug = name.replace(/\.md$/, '');
       const { data, content } = readFrontmatter(path.join(dir, name));
       const date = isoDate(data.date);
+      // An activity « en projet » is only an idea: its `date` (optional) is
+      // approximate and only orders the list; `period` ("Printemps 2027") is
+      // what is shown.
+      const provisional = data.provisional === true;
+      const period = data.period ? String(data.period) : '';
       return {
         slug,
         title: data.title || slug.replace(/-/g, ' '),
         date,
-        dateFormatted: formatFrenchDate(date),
+        dateFormatted: provisional ? period || 'Date à définir' : formatFrenchDate(date),
+        provisional,
+        period,
+        // The slug of the activity « en projet » this planned activity takes
+        // the place of (also accepted as `evenements/<slug>.html`).
+        replaces: data.replaces ? path.basename(String(data.replaces)).replace(/\.(html|md)$/, '') : '',
         summary: data.summary || '',
         category: data.category || '',
         author: data.author || 'APECO Voirets',

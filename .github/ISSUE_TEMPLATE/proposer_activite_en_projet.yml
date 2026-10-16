@@ -1,0 +1,47 @@
+name: Proposer une activité en projet
+description: Annoncez sur le site une activité envisagée mais pas encore planifiée (un prochain café des parents, une soirée sur les écrans…).
+title: "[En projet] : "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### 💡 Activité en projet
+        Une idée d'activité dont la date n'est pas encore fixée. Elle apparaît dans la rubrique « En projet » de la page Activités, quelques minutes après l'envoi.
+
+        **Titre de l'issue** : il devient le titre de l'activité (remplacez « [En projet] : » par exemple par « Café des parents »).
+
+        Pour corriger la page, modifiez cette issue (bouton « Edit ») : la page est recréée.
+
+        **Quand l'activité est planifiée**, publiez son annonce avec le formulaire « Publier un document Word (.docx) » et indiquez le numéro de cette issue dans le champ « Remplace une activité en projet » : l'annonce prend la place de l'idée sur le site et cette issue est fermée.
+
+  - type: input
+    id: period
+    attributes:
+      label: Période envisagée
+      description: "Affichée à la place d'une date, par exemple « Printemps 2027 », « Après les vacances de février » ou « Date à définir »."
+      placeholder: "Printemps 2027"
+    validations:
+      required: true
+
+  - type: input
+    id: approx_date
+    attributes:
+      label: Date approximative
+      description: "Facultatif, jamais affichée : une date même approximative (JJ.MM.AAAA) pour ordonner les activités en projet."
+      placeholder: "01.03.2027"
+
+  - type: input
+    id: location
+    attributes:
+      label: Lieu
+      description: Facultatif.
+      placeholder: "Cycle d'orientation des Voirets"
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: "Quelques phrases sur l'idée : pour qui, quel format, ce qui reste à décider. Le premier paragraphe est repris dans la liste des activités."
+      placeholder: "Un nouveau café des parents pour se rencontrer et échanger sur le quotidien de nos ados."
+    validations:
+      required: true

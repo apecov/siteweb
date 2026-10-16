@@ -132,6 +132,27 @@ Every activity page gets a [schema.org `Event`](https://schema.org/Event) in JSO
 - `organizer`: APECO Voirets plus any `co_organizers`; `performer` when given;
 - `image`: the first image of the page (e.g. the flyer), otherwise the logo; absolute URLs use `url` in `data/site.json` (`https://www.apecov.ch/`), which also gives every page its canonical URL.
 
+### Activities « en projet »
+
+An activity that is imagined but not planned yet (another café des parents, a session on screens…) can be announced as an idea. It is listed in an « En projet » section of the Activités page (shown only when there are ideas), with a dashed card, its `period` instead of a date and a notice on its page. It never counts as upcoming or past, and gets no schema.org `Event` (it has no date yet).
+
+```markdown
+---
+title: "Café des parents"
+provisional: true
+period: "Printemps 2027"     # shown instead of a date; « Date à définir » when missing
+date: "2027-03-01"           # optional, never shown: orders the ideas (undated ones last)
+location: "Cycle d'orientation des Voirets"   # optional
+summary: "Un nouveau café des parents."
+---
+```
+
+Files are named `content/evenements/projet-<slug>.md`. The build warns about an idea whose approximate date has passed.
+
+**When the idea is planned**, the real activity takes its place: give its page `replaces: "projet-<slug>"` (or the idea's page address). The idea then leaves the list, and its page becomes a redirect to the planned activity, so links that were shared keep working. The idea's file can stay.
+
+On GitHub: **Issues → New issue → Proposer une activité en projet** (fields: *Période envisagée*, *Date approximative*, *Lieu*, *Description*; the issue title is the activity's title). The same workflow as for Word documents publishes it, and editing the issue recreates the page. When the activity is planned, publish its Word announcement and put the idea's issue number (`#12`) or page address in the form's **Remplace une activité en projet** field: the announcement replaces the idea, and the workflow closes the idea's issue. If nothing matches, the announcement is still published and the workflow comment says so.
+
 ### Maps
 
 An activity with an `address` gets a « Lieu » section at the end of its page. With coordinates (`geo`) it also shows an [OpenStreetMap](https://www.openstreetmap.org/) map:
@@ -159,6 +180,7 @@ Activities published from a Word document get coordinates and a preview automati
 2. Replace `[Publication] : ` in the issue title with the page title, e.g. `Stand de l'Escalade 2026`.
 3. Fill in the form:
    - **Type de document**: *Activité* (upcoming or past) or *Procès-verbal*.
+   - **Remplace une activité en projet** (optional): the issue number or page address of the idea this activity makes real (see *Activities « en projet »*).
    - **Date** (required, `11.12.2026` or `2026-12-11`), and optionally **Heure**, **Lieu** and **Résumé** (shown on the activity cards; without it the first sentence of the document is used).
    - **Document Word (.docx)**: drag and drop the file.
 4. Submit. The *Publish a Word document from an issue* workflow:

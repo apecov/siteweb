@@ -1,8 +1,9 @@
-name: Publish a Word document from an issue
+name: Publish a Word document or an activity idea from an issue
 
 # Issues created with the "Publier un document Word (.docx)" form become an
-# activity page (content/evenements/) or a PV (content/pv/). Editing the issue
-# while it is open recreates the page.
+# activity page (content/evenements/) or a PV (content/pv/); those created with
+# the "Proposer une activité en projet" form become an activity « en projet ».
+# Editing the issue while it is open recreates the page.
 on:
   issues:
     types: [opened, edited]
@@ -21,10 +22,11 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    # Only issues made with the form (it adds the "Document Word (.docx)" field).
+    # Only issues made with one of the forms (recognised by one of their fields).
     if: >-
       github.event.issue.state == 'open' &&
-      contains(github.event.issue.body, '### Document Word (.docx)')
+      (contains(github.event.issue.body, '### Document Word (.docx)') ||
+       contains(github.event.issue.body, '### Période envisagée'))
     steps:
       # Anyone can open an issue on a public repository: only people with
       # write access may publish to the site. (author_association is not
@@ -49,7 +51,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUM: ${{ github.event.issue.number }}
         run: |
-          gh issue comment "$ISSUE_NUM" --repo "$GITHUB_REPOSITORY" --body "ℹ️ Seuls les membres du comité ayant accès en écriture au dépôt peuvent publier sur le site. Un membre du comité peut reprendre ce document."
+          gh issue comment "$ISSUE_NUM" --repo "$GITHUB_REPOSITORY" --body "ℹ️ Seuls les membres du comité ayant accès en écriture au dépôt peuvent publier sur le site. Un membre du comité peut reprendre cette proposition."
 
       # The latest default branch, not the commit the event saw: an earlier
       # queued run may have pushed since.
@@ -65,7 +67,7 @@ jobs:
       - if: steps.auth.outputs.allowed == 'true'
         run: npm ci
 
-      - name: Convert the attached document
+      - name: Convert the issue into a page
         id: process
         if: steps.auth.outputs.allowed == 'true'
         env:
@@ -111,22 +113,58 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh workflow run pages.yml --repo "$GITHUB_REPOSITORY" --ref "${{ github.event.repository.default_branch }}"
 
+      # Also runs when nothing changed (an edit that does not touch the page),
+      # so that a mistyped « Remplace une activité en projet » is reported.
       - name: Report the published page
-        if: steps.commit.outputs.pushed == 'true'
+        if: steps.commit.outcome == 'success'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUM: ${{ steps.process.outputs.issue_number }}
           PAGE: ${{ steps.process.outputs.page }}
           CREATED_FILE: ${{ steps.process.outputs.created_file }}
+          DOC_TYPE: ${{ steps.process.outputs.doc_type }}
+          REPLACED_PAGE: ${{ steps.process.outputs.replaced_page }}
+          REPLACED_ISSUE: ${{ steps.process.outputs.replaced_issue }}
+          REPLACE_MISSING: ${{ steps.process.outputs.replace_missing }}
+          PUSHED: ${{ steps.commit.outputs.pushed }}
         run: |
           site=$(gh api "repos/$GITHUB_REPOSITORY/pages" --jq .html_url 2>/dev/null || echo "https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/")
-          gh issue comment "$ISSUE_NUM" --repo "$GITHUB_REPOSITORY" --body "✅ **Document publié !**
+          url="${site%/}/$PAGE"
+          if [ "$DOC_TYPE" = projet ]; then
+            next="Quand l'activité sera planifiée, publiez son annonce avec le formulaire « Publier un document Word (.docx) » en indiquant **#$ISSUE_NUM** dans « Remplace une activité en projet » : elle prendra la place de l'idée et cette issue sera fermée."
+          else
+            next="Fermez l'issue quand la page vous convient."
+          fi
+          notes=""
+          if [ -n "$REPLACED_PAGE" ]; then
+            notes="
 
-          La page sera en ligne d'ici quelques minutes : ${site%/}/$PAGE
+          📅 Cette activité remplace l'activité en projet ${site%/}/$REPLACED_PAGE (son adresse renvoie maintenant ici)."
+          fi
+          if [ -n "$REPLACE_MISSING" ]; then
+            notes="
 
-          Fichier créé : \`$CREATED_FILE\`
+          ⚠️ Aucune activité en projet ne correspond à « $REPLACE_MISSING » : rien n'a été remplacé. Corrigez le champ « Remplace une activité en projet » (numéro de l'issue de l'idée, par ex. #12) en modifiant cette issue."
+          fi
+          if [ "$PUSHED" = true ]; then
+            title="✅ **Page publiée !**
 
-          Pour corriger la page, modifiez cette issue (bouton « Edit ») : elle sera recréée. Fermez l'issue quand la page vous convient."
+          La page sera en ligne d'ici quelques minutes : $url"
+          else
+            title="ℹ️ **La page est déjà à jour** : $url"
+          fi
+          gh issue comment "$ISSUE_NUM" --repo "$GITHUB_REPOSITORY" --body "$title
+
+          Fichier : \`$CREATED_FILE\`$notes
+
+          Pour corriger la page, modifiez cette issue (bouton « Edit ») : elle sera recréée. $next"
+          # The idea is now a planned activity: close the issue that proposed it.
+          if [ -n "$REPLACED_ISSUE" ] && [ "$REPLACED_ISSUE" != "$ISSUE_NUM" ] && [ "$PUSHED" = true ]; then
+            state=$(gh issue view "$REPLACED_ISSUE" --repo "$GITHUB_REPOSITORY" --json state --jq .state || echo "")
+            if [ "$state" = OPEN ]; then
+              gh issue close "$REPLACED_ISSUE" --repo "$GITHUB_REPOSITORY" --comment "📅 Cette activité est maintenant planifiée : $url (issue #$ISSUE_NUM)."
+            fi
+          fi
 
       - name: Report a problem
         if: failure() || (steps.auth.outputs.allowed == 'true' && steps.process.outputs.created_file == '')
@@ -135,8 +173,8 @@ jobs:
           ISSUE_NUM: ${{ github.event.issue.number }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          gh issue comment "$ISSUE_NUM" --repo "$GITHUB_REPOSITORY" --body "⚠️ **Le document n'a pas pu être publié.**
+          gh issue comment "$ISSUE_NUM" --repo "$GITHUB_REPOSITORY" --body "⚠️ **La page n'a pas pu être publiée.**
 
-          Vérifiez qu'un fichier \`.docx\` est bien joint dans le champ « Document Word (.docx) », puis modifiez l'issue pour réessayer.
+          Vérifiez les champs du formulaire (pour un document Word : qu'un fichier \`.docx\` est bien joint dans le champ « Document Word (.docx) » ; pour une activité en projet : que la description est remplie), puis modifiez l'issue pour réessayer.
 
           Détails techniques : $RUN_URL"

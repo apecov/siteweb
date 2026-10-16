@@ -140,12 +140,23 @@ function pastEventCard(event, base) {
 </div>`;
 }
 
+function plannedEventCard(event, base) {
+  const href = base + event.out;
+  const location = event.location ? `<span>📍 ${escapeHtml(event.location)}</span>` : '';
+  return `<div class="card card-planned">
+  <div class="card-meta"><span class="badge badge-orange">En projet</span> <span>🗓️ ${escapeHtml(event.dateFormatted)}</span> ${location}</div>
+  <h3 class="card-title"><a href="${href}">${escapeHtml(event.title)}</a></h3>
+  <p>${escapeHtml(event.summary)}</p>
+  <div style="margin-top: 0.75rem;"><a href="${href}" style="font-weight: 700; font-size: 0.95rem;">En savoir plus &rarr;</a></div>
+</div>`;
+}
+
 function emptyCard(text) {
   return `<div class="card"><p>${text}</p></div>`;
 }
 
 function buildComponents(data, base) {
-  const { upcoming, past, reports } = data;
+  const { upcoming, past, planned, reports } = data;
   return {
     upcoming_events_home: upcoming.length
       ? upcoming
@@ -166,6 +177,14 @@ function buildComponents(data, base) {
       : emptyCard(
           "Aucun événement n'est programmé dans l'immédiat. Revenez consulter cette page prochainement !"
         ),
+
+    planned_events: planned.length
+      ? `<section style="margin-bottom: 3rem;">
+<h2>💡 En projet</h2>
+<p>Des idées d'activités pour les mois à venir : rien n'est encore fixé. Les dates seront annoncées ici dès qu'elles seront connues. Envie d'aider à les organiser ? <a href="${base}contact.html">Contactez le comité</a>.</p>
+<div class="grid-2">\n${planned.map((e) => plannedEventCard(e, base)).join('\n')}\n</div>
+</section>`
+      : '',
 
     past_events: past.length
       ? `<section>\n<h2>🏛️ Activités passées</h2>\n<div class="grid-2">\n${past
@@ -218,9 +237,10 @@ function renderLayout(layout, { site, out, nav, title, description, content, yea
 
 function detailHeader(item) {
   const meta = [`<span class="badge badge-blue">${escapeHtml(item.dateFormatted)}</span>`];
+  if (item.provisional) meta.unshift('<span class="badge badge-orange">En projet</span>');
   if (item.time) meta.push(`<span>⏰ ${escapeHtml(item.time)}</span>`);
   if (item.location) meta.push(`<span>📍 ${escapeHtml(item.location)}</span>`);
-  if (item.category) meta.push(`<span class="badge badge-green">${escapeHtml(item.category)}</span>`);
+  if (item.category && !item.provisional) meta.push(`<span class="badge badge-green">${escapeHtml(item.category)}</span>`);
   return `<div style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--color-border); padding-bottom: 1rem;">
   <div class="card-meta">${meta.join(' ')}</div>
   <h1 style="border-bottom: none; margin-bottom: 0.5rem; margin-top: 0.5rem;">${escapeHtml(item.title)}</h1>
@@ -283,13 +303,25 @@ function placeSection(item, base, root, site) {
 function renderDetail(md, item, collection, base, root, site) {
   const { nav, back } = COLLECTIONS[collection];
   const body = md.render(item.markdown, { base });
+  const notice = item.provisional
+    ? `<div class="alert alert-warning"><div>💡 <strong>Activité en projet :</strong> la date et les détails ne sont pas encore fixés. Cette page sera remplacée par l'annonce de l'activité dès qu'elle sera planifiée.</div></div>`
+    : '';
   return `<div class="container">
   <div style="margin-bottom: 1.5rem;"><a href="${base}${nav}" style="font-weight: 700;">&larr; ${escapeHtml(back)}</a></div>
   <article class="markdown-body">
 ${detailHeader(item)}
+${notice}
 ${body}
 ${collection === 'events' ? placeSection(item, base, root, site) : ''}
   </article>
+</div>`;
+}
+
+// The page of an activity « en projet » that has since been planned: its
+// address keeps working and leads to the planned activity.
+function renderReplaced(event, base) {
+  return `<div class="container">
+  <div class="alert alert-success"><div>📅 Cette activité est maintenant planifiée : <a href="${base}${event.out}"><strong>${escapeHtml(event.title)}</strong></a>, ${escapeHtml(event.dateFormatted)}.</div></div>
 </div>`;
 }
 
@@ -327,10 +359,33 @@ export function build({ root = ROOT, outDir = path.join(root, '_site'), today } 
       console.warn(`warning: ${event.out} has no map preview; run \`npm run geocode\``);
     }
   }
+  // A planned activity can take the place of an activity « en projet »
+  // (`replaces`): the idea leaves the list and its page leads to the activity.
+  const bySlug = new Map(items.events.map((e) => [e.slug, e]));
+  const replaced = new Map();
+  for (const event of items.events) {
+    if (!event.replaces || event.provisional) continue;
+    const idea = bySlug.get(event.replaces);
+    if (idea && !idea.provisional) {
+      console.warn(`warning: ${event.out} replaces ${idea.out}, which is not an activity « en projet »; ignored`);
+      continue;
+    }
+    replaced.set(event.replaces, event);
+  }
+  items.events = items.events.filter((e) => !replaced.has(e.slug));
+  const planned = items.events
+    .filter((e) => e.provisional)
+    // Ordered by their approximate date, ideas without one last.
+    .sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999') || a.title.localeCompare(b.title, 'fr'));
+  for (const idea of planned) {
+    if (idea.date && idea.date < today) console.warn(`warning: ${idea.out} is « en projet » for a date that has passed (${idea.date})`);
+  }
+  const scheduled = items.events.filter((e) => !e.provisional);
   const data = {
     reports: items.reports,
-    upcoming: items.events.filter((e) => e.date >= today).reverse(), // soonest first
-    past: items.events.filter((e) => e.date < today),
+    planned,
+    upcoming: scheduled.filter((e) => e.date >= today).reverse(), // soonest first
+    past: scheduled.filter((e) => e.date < today),
   };
 
   const mdPages = buildMarkdownRenderer({ html: true });
@@ -369,10 +424,30 @@ export function build({ root = ROOT, outDir = path.join(root, '_site'), today } 
           description: item.summary,
           content: renderDetail(mdContent, item, collection, base, root, site),
           year,
-          head: collection === 'events' ? jsonLdScript(eventJsonLd(item, site)) : '',
+          // An idea has no date yet: no schema.org Event for it.
+          head: collection === 'events' && !item.provisional ? jsonLdScript(eventJsonLd(item, site)) : '',
         })
       );
     }
+  }
+
+  for (const [slug, event] of replaced) {
+    const out = `${COLLECTIONS.events.dir}/${slug}.html`;
+    const base = depthPrefix(out);
+    writePage(
+      outDir,
+      out,
+      renderLayout(layout, {
+        site,
+        out,
+        nav: COLLECTIONS.events.nav,
+        title: event.title,
+        description: event.summary,
+        content: renderReplaced(event, base),
+        year,
+        head: `<meta http-equiv="refresh" content="0; url=${base}${event.out}">\n<meta name="robots" content="noindex">`,
+      })
+    );
   }
 
   console.log(`\nBuilt site into ${path.relative(process.cwd(), outDir) || '.'}/`);

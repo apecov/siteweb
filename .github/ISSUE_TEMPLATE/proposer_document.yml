@@ -12,6 +12,8 @@ body:
 
         Pour corriger la page ensuite, modifiez simplement cette issue (bouton « Edit ») : la page est recréée.
 
+        **Une activité en projet devient réalité ?** Une activité réellement planifiée l'emporte sur l'idée : indiquez l'activité en projet dans le champ « Remplace une activité en projet » ci-dessous. L'annonce prend alors sa place sur le site, l'ancienne adresse de l'idée renvoie vers l'annonce et l'issue de l'idée est fermée.
+
   - type: dropdown
     id: doc_type
     attributes:
@@ -22,6 +24,13 @@ body:
         - "Procès-verbal / Compte-rendu de réunion"
     validations:
       required: true
+
+  - type: input
+    id: replaces
+    attributes:
+      label: Remplace une activité en projet
+      description: "Facultatif, pour une activité : le numéro de l'issue qui a proposé l'activité en projet (par ex. #12) ou l'adresse de sa page sur le site. L'activité planifiée remplace alors l'idée."
+      placeholder: "#12"
 
   - type: input
     id: event_date

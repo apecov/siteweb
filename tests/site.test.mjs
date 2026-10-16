@@ -512,7 +512,7 @@ test('the preview is shown behind the map button, with the OSM credit', async (t
   assert.match(html, /href="https:\/\/www\.openstreetmap\.org\/copyright"[^>]*>© OpenStreetMap</);
   // The interactive map is the Transport map, and the TPG link is there.
   assert.match(html, /data-map-src="[^"]*layer=transportmap/);
-  assert.match(html, /href="https:\/\/www\.tpg\.ch\/fr\/voyager\/planifier-votre-voyage\/itineraires"[^>]*>calculer votre itinéraire avec les TPG/);
+  assert.match(html, /href="https:\/\/www\.tpg\.ch\/fr\/voyager\/planifier-votre-voyage\/itineraires"[^>]*>calculez votre itinéraire avec les TPG/);
 
   // A Thunderforest preview, matching the interactive map, is preferred when present.
   await ensureMapImage(root, geo, { style: 'transport', fetchTileImpl: async () => solidTile([1, 2, 3]) });

@@ -43,7 +43,7 @@ STATUTS
 
 ### Organes
 
-**Art. 5 :** Les organes de l’APECO Voirets sont L'assemblée générale,  Le comité, Le(s) vérificateur(s) des comptes.
+**Art. 5 :** Les organes de l’APECO Voirets sont L'assemblée générale, Le comité, Le(s) vérificateur(s) des comptes.
 
 ### Membres et admission
 

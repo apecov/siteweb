@@ -5,6 +5,7 @@ import MarkdownIt from 'markdown-it';
 import { escapeHtml, loadCollection, readFrontmatter } from './lib/content.mjs';
 import { eventJsonLd, jsonLdScript } from './lib/jsonld.mjs';
 import { findMapImage } from './lib/staticmap.mjs';
+import { FEED_PATH, contentFile, firstCommitDates, rssFeed } from './lib/rss.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const ROOT = path.resolve(__dirname, '..');
@@ -155,33 +156,72 @@ function emptyCard(text) {
   return `<div class="card"><p>${text}</p></div>`;
 }
 
+/** A section of the home page: heading, link to the Activités page, cards. */
+function homeSection(heading, href, cards) {
+  return `<section style="margin-bottom: 3rem;">
+  <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1.25rem;">
+    <h2>${heading}</h2>
+    <a href="${href}" style="font-weight: 700;">Toutes les activités &rarr;</a>
+  </div>
+  ${cards}
+</section>`;
+}
+
+const PLANNED_INTRO = "Des idées d'activités pour les mois à venir : rien n'est encore fixé. Les dates seront annoncées ici dès qu'elles seront connues.";
+
 function buildComponents(data, base) {
   const { upcoming, past, planned, reports } = data;
+  // With ideas « en projet » but nothing scheduled, the ideas say enough: the
+  // « no event scheduled » sections are left out.
+  const hideEmptyAgenda = !upcoming.length && planned.length > 0;
   return {
-    upcoming_events_home: upcoming.length
-      ? upcoming
-          .slice(0, 3)
-          .map((e) => eventCard(e, base, { showLocation: true, showTime: true, linkLabel: 'En savoir plus' }))
-          .join('\n')
-      : emptyCard('Aucun événement programmé pour le moment. Contactez le comité pour proposer une idée !'),
-
-    past_events_home: past.length
-      ? past
-          .slice(0, 3)
-          .map((e) => eventCard(e, base, { showLocation: true, showTime: false, linkLabel: "Voir l'événement" }))
-          .join('\n')
-      : emptyCard('Aucune activité passée pour le moment.'),
-
-    upcoming_events: upcoming.length
-      ? `<div class="grid-2">\n${upcoming.map((e) => upcomingEventCard(e, base)).join('\n')}\n</div>`
-      : emptyCard(
-          "Aucun événement n'est programmé dans l'immédiat. Revenez consulter cette page prochainement !"
+    upcoming_events_home: hideEmptyAgenda
+      ? ''
+      : homeSection(
+          '📅 Prochaines activités',
+          `${base}activites.html`,
+          upcoming.length
+            ? upcoming
+                .slice(0, 3)
+                .map((e) => eventCard(e, base, { showLocation: true, showTime: true, linkLabel: 'En savoir plus' }))
+                .join('\n')
+            : emptyCard('Aucun événement programmé pour le moment. Contactez le comité pour proposer une idée !')
         ),
 
+    planned_events_home: planned.length
+      ? homeSection(
+          '💡 En projet',
+          `${base}activites.html#en-projet`,
+          `<p>${PLANNED_INTRO}</p>\n${planned.slice(0, 3).map((e) => plannedEventCard(e, base)).join('\n')}`
+        )
+      : '',
+
+    past_events_home: homeSection(
+      '🏛️ Activités récentes',
+      `${base}activites.html`,
+      past.length
+        ? past
+            .slice(0, 3)
+            .map((e) => eventCard(e, base, { showLocation: true, showTime: false, linkLabel: "Voir l'événement" }))
+            .join('\n')
+        : emptyCard('Aucune activité passée pour le moment.')
+    ),
+
+    upcoming_events: hideEmptyAgenda
+      ? ''
+      : `<section style="margin-bottom: 3rem;">
+<h2>📅 Agenda des prochains événements</h2>
+${
+  upcoming.length
+    ? `<div class="grid-2">\n${upcoming.map((e) => upcomingEventCard(e, base)).join('\n')}\n</div>`
+    : emptyCard("Aucun événement n'est programmé dans l'immédiat. Revenez consulter cette page prochainement !")
+}
+</section>`,
+
     planned_events: planned.length
-      ? `<section style="margin-bottom: 3rem;">
+      ? `<section id="en-projet" style="margin-bottom: 3rem;">
 <h2>💡 En projet</h2>
-<p>Des idées d'activités pour les mois à venir : rien n'est encore fixé. Les dates seront annoncées ici dès qu'elles seront connues. Envie d'aider à les organiser ? <a href="${base}contact.html">Contactez le comité</a>.</p>
+<p>${PLANNED_INTRO} Envie d'aider à les organiser ? <a href="${base}contact.html">Contactez le comité</a>.</p>
 <div class="grid-2">\n${planned.map((e) => plannedEventCard(e, base)).join('\n')}\n</div>
 </section>`
       : '',
@@ -449,6 +489,17 @@ export function build({ root = ROOT, outDir = path.join(root, '_site'), today } 
       })
     );
   }
+
+  const feedEntries = [
+    ...scheduled.map((item) => ({ item, category: 'Activité' })),
+    ...planned.map((item) => ({ item, category: 'En projet' })),
+    ...items.reports.map((item) => ({ item, category: 'Procès-verbal', dir: COLLECTIONS.reports.dir })),
+  ].map(({ item, category, dir = COLLECTIONS.events.dir }) => ({ item, category, file: contentFile(dir, item) }));
+  writeFileSync(
+    path.join(outDir, FEED_PATH),
+    rssFeed({ site, entries: feedEntries, dates: firstCommitDates(root), fallbackDate: today })
+  );
+  console.log('wrote', FEED_PATH);
 
   console.log(`\nBuilt site into ${path.relative(process.cwd(), outDir) || '.'}/`);
 }

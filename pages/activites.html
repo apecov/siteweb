@@ -31,14 +31,13 @@ description: "Agenda des événements, cafés des parents et activités de l'APE
     </div>
   </div>-->
 
-  <section style="margin-bottom: 3rem;">
-    <h2>📅 Agenda des prochains événements</h2>
-    {{upcoming_events}}
-  </section>
+  {{upcoming_events}}
 
   {{planned_events}}
 
   {{past_events}}
+
+  <p class="feed-note">📡 Pour être averti des nouvelles activités, abonnez-vous à notre <a href="{{BASE}}rss.xml">flux RSS</a> avec votre lecteur de flux (Feedly, Thunderbird, NetNewsWire…).</p>
 
   <div class="alert alert-info" style="margin-top: 3rem;">
     <div>

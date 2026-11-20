@@ -672,6 +672,12 @@ textarea.form-control {
   accent-color: var(--color-primary);
 }
 
+/* Link to the RSS feed, under the activities. */
+.feed-note {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+}
+
 /* 12. Notice & Alert Boxes */
 .alert {
   padding: 1rem 1.25rem;

@@ -638,3 +638,79 @@ test('a Word announcement can replace an activity « en projet »', async (t) =>
   // The idea itself is kept: the build hides it and redirects its page.
   assert.ok(existsSync(path.join(root, 'content/evenements/projet-cafe-des-parents.md')));
 });
+
+test('ideas « en projet » are on the home page too', (t) => {
+  const read = buildWith(t, { 'content/evenements/projet-cafe-des-parents.md': IDEA });
+  const home = read('index.html');
+  assert.match(home, /En projet<\/h2>/);
+  assert.match(home, /href="activites\.html#en-projet"/);
+  assert.match(home, /href="evenements\/projet-cafe-des-parents\.html"/);
+  assert.match(read('activites.html'), /<section id="en-projet"/);
+});
+
+test('with ideas but nothing scheduled, the empty agenda is left out', (t) => {
+  // On 2026-01-01 every fixture activity is past.
+  const read = buildWith(t, { 'content/evenements/projet-cafe-des-parents.md': IDEA }, '2026-01-01');
+  for (const page of ['index.html', 'activites.html']) {
+    const html = read(page);
+    assert.doesNotMatch(html, /Prochaines activités|Agenda des prochains événements|Aucun événement/, page);
+    assert.match(html, /En projet<\/h2>/, page);
+  }
+});
+
+test('without ideas, an empty agenda says so', (t) => {
+  const read = buildWith(t, {}, '2026-01-01');
+  assert.match(read('index.html'), /Prochaines activités[\s\S]*Aucun événement programmé/);
+  assert.match(read('activites.html'), /Agenda des prochains événements[\s\S]*Aucun événement n'est programmé/);
+});
+
+test('the RSS feed lists activities, ideas and PVs', (t) => {
+  const read = buildWith(t, {
+    'content/evenements/projet-cafe-des-parents.md': IDEA,
+    'content/evenements/projet-ecrans.md': '---\ntitle: "Écrans"\nprovisional: true\nsummary: "Plus tard."\n---\n\nIdée.\n',
+    'content/evenements/2026-03-12-cafe-des-parents.md':
+      '---\ntitle: "Café de printemps"\ndate: "2026-03-12"\ntime: "19h30"\nlocation: "CO des Voirets"\nreplaces: "projet-cafe-des-parents"\nsummary: "Café."\n---\n\nTexte.\n',
+  });
+  const feed = read('rss.xml');
+  const links = [...feed.matchAll(/<item>[\s\S]*?<link>([^<]+)<\/link>/g)].map((m) => m[1]);
+  assert.deepEqual(new Set(links), new Set([
+    'https://www.apecov.ch/evenements/2026-03-12-cafe-des-parents.html',
+    'https://www.apecov.ch/evenements/projet-ecrans.html',
+    'https://www.apecov.ch/evenements/2025-11-15-cafe-des-parents.html',
+    'https://www.apecov.ch/evenements/2025-12-05-escalade.html',
+    'https://www.apecov.ch/evenements/2025-08-25-ag.html',
+    'https://www.apecov.ch/pv/2025-08-25-pv.html',
+  ]), 'the replaced idea is left out');
+  assert.match(feed, /<description>12 mars 2026, 19h30 · CO des Voirets\. Café\.<\/description>/);
+  assert.match(feed, /<category>En projet<\/category>\s*<description>En projet \(Date à définir\)\. Plus tard\.<\/description>/);
+  assert.match(feed, /<description>Les activités, projets et procès-verbaux de l'APECO Voirets\.<\/description>/);
+  // Without git history, items are dated by the activity: newest first.
+  assert.ok(links.indexOf('https://www.apecov.ch/evenements/2026-03-12-cafe-des-parents.html') < links.indexOf('https://www.apecov.ch/pv/2025-08-25-pv.html'));
+
+  assert.match(read('index.html'), /<link rel="alternate" type="application\/rss\+xml" title="APECO Voirets – activités" href="rss\.xml">/);
+  assert.match(read('evenements/projet-ecrans.html'), /<link rel="alternate" type="application\/rss\+xml"[^>]*href="\.\.\/rss\.xml">/);
+});
+
+test('feed items are dated by their first commit', async (t) => {
+  const { execFileSync } = await import('node:child_process');
+  const { firstCommitDates } = await import('../site/lib/rss.mjs');
+  const root = tempDir(t);
+  const git = (args, date) =>
+    execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.org', ...args], {
+      cwd: root,
+      env: { ...process.env, GIT_COMMITTER_DATE: date, GIT_AUTHOR_DATE: date },
+    });
+  git(['init', '-q']);
+  mkdirSync(path.join(root, 'content/evenements'), { recursive: true });
+  writeFileSync(path.join(root, 'content/evenements/a.md'), 'a');
+  git(['add', '.']);
+  git(['commit', '-qm', 'a'], '2026-01-02T10:00:00Z');
+  writeFileSync(path.join(root, 'content/evenements/a.md'), 'a, edited');
+  writeFileSync(path.join(root, 'content/evenements/b.md'), 'b');
+  git(['add', '.']);
+  git(['commit', '-qm', 'b'], '2026-02-03T10:00:00Z');
+
+  const dates = firstCommitDates(root);
+  assert.equal(dates.get('content/evenements/a.md').toISOString(), '2026-01-02T10:00:00.000Z', 'an edit does not change the date');
+  assert.equal(dates.get('content/evenements/b.md').toISOString(), '2026-02-03T10:00:00.000Z');
+});

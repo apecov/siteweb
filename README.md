@@ -46,12 +46,19 @@ Placeholders available in pages and in the layout:
 | `{{site.contact.email}}` (any path) | The value from `data/site.json` |
 | `{{#if site.x}}…{{/if}}`, `{{#unless site.x}}…{{/unless}}` | Kept only when the value is set / empty (not nestable) |
 | `{{BASE}}` | Relative prefix to the site root (`""` or `"../"`), so links work under the GitHub Pages project path |
-| `{{upcoming_events}}`, `{{upcoming_events_home}}`, `{{past_events}}`, `{{past_events_home}}` | Event cards from `content/evenements/` |
+| `{{upcoming_events}}`, `{{upcoming_events_home}}`, `{{past_events}}`, `{{past_events_home}}` | Event cards from `content/evenements/` (each with its section heading) |
+| `{{planned_events}}`, `{{planned_events_home}}` | The « En projet » section, empty without ideas |
 | `{{meeting_reports}}` | PV list from `content/pv/` |
 
 Relative links inside Markdown (e.g. `[statuts](statuts.html)`) are written relative to the site root and rewritten automatically for pages in sub-directories.
 
 Markdown in `content/` is rendered **without raw HTML** (it may come from converted Word documents); `pages/` may contain HTML.
+
+### RSS feed
+
+The build writes `_site/rss.xml` (`site/lib/rss.mjs`): one item per scheduled activity, activity « en projet » and PV, with its date, place and summary, linking to its page. Every page announces it in its `<head>` (feed readers find it from the site address), and the footer and the Activités page link to it.
+
+An item's publication date is when its file was first committed, so a reader shows a new page as new even for an activity that took place earlier; the Pages workflow checks out the full history for this. Without history, the activity's date is used. An idea replaced by its planned activity leaves the feed, and the planned activity appears as a new item.
 
 ### Contact e-mail
 
@@ -134,7 +141,7 @@ Every activity page gets a [schema.org `Event`](https://schema.org/Event) in JSO
 
 ### Activities « en projet »
 
-An activity that is imagined but not planned yet (another café des parents, a session on screens…) can be announced as an idea. It is listed in an « En projet » section of the Activités page (shown only when there are ideas), with a dashed card, its `period` instead of a date and a notice on its page. It never counts as upcoming or past, and gets no schema.org `Event` (it has no date yet).
+An activity that is imagined but not planned yet (another café des parents, a session on screens…) can be announced as an idea. It is listed in an « En projet » section of the Activités page and of the home page (shown only when there are ideas; while nothing is scheduled, the empty agenda sections are then left out), with a dashed card, its `period` instead of a date and a notice on its page. It never counts as upcoming or past, and gets no schema.org `Event` (it has no date yet).
 
 ```markdown
 ---

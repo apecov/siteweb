@@ -2,7 +2,7 @@
 
 Official static website for the **Association des parents d'élèves du cycle d'orientation des Voirets (APECO Voirets)** in Geneva, Switzerland.
 
-The site is built with a small Node.js build script (`markdown-it` plus plain HTML templates, the same setup as [sib-swiss/sparql-training](https://github.com/sib-swiss/sparql-training)) and published for free on GitHub Pages. The design is inspired by the [FAPEO (Fédération des Associations de Parents d'Élèves de l'Enseignement Obligatoire)](https://www.fapeo.ch/) visual identity, simplified into clean and modern CSS.
+The site is built with a small Node.js build script (`markdown-it` plus plain HTML templates, the same setup as [sib-swiss/sparql-training](https://github.com/sib-swiss/sparql-training)) and published for free on GitHub Pages. The layout is inspired by the [FAPEO (Fédération des Associations de Parents d'Élèves de l'Enseignement Obligatoire)](https://www.fapeo.ch/) visual identity, simplified into clean and modern CSS; the colours come from the APECO logo.
 
 > **Language Conventions:**
 > - **Codebase, scripts, architecture, templates, workflows, and documentation:** English
@@ -14,7 +14,8 @@ The site is built with a small Node.js build script (`markdown-it` plus plain HT
 
 - **Static & Fast:** Pure HTML/CSS output generated in milliseconds by one Node script, no framework.
 - **Markdown-Driven:** Announcements, upcoming activities and meeting minutes are Markdown files with frontmatter.
-- **FAPEO-Inspired Styling:** Clean typography (`Alegreya Sans`, self-hosted in `static/fonts/`), signature blue (`#008ac5`) and green (`#9ac331`) palette, custom bullet points, and responsive card layouts.
+- **Styling:** Clean typography (`Alegreya Sans`, self-hosted in `static/fonts/`), the blue (`#075095`), navy (`#0b4576`) and green (`#52aa70`) of the APECO logo, custom bullet points, and responsive card layouts.
+- **Logo:** `static/images/logo-apecov.svg` (header), redrawn as vector from the logo on the FAPEO poster of November 2026 (lettering in Montserrat, as outlines); `logo-apecov.png` is a rendering of it for the RSS feed and schema.org, which do not accept SVG.
 - **Association Sections:**
   - **Accueil (Home):** Welcome message, core pillars, upcoming and recent activities.
   - **Statuts et PV:** The 14 articles of the APECO Voirets statutes adopted on 25 August 2025, and the archive of General Assembly minutes (PV).

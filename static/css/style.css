@@ -49,12 +49,12 @@
 
 /* 1. CSS Variables & Theme Setup */
 :root {
-  --color-primary: #008ac5;         /* FAPEO Signature Blue */
-  --color-primary-dark: #006f9e;
-  --color-primary-light: #e8f4fa;
-  --color-secondary: #9ac331;       /* FAPEO Fresh Green */
-  --color-secondary-dark: #82a823;
-  --color-secondary-light: #f3f9e8;
+  --color-primary: #075095;         /* APECO logo blue (right child) */
+  --color-primary-dark: #0b4576;    /* APECO logo navy (school, lettering) */
+  --color-primary-light: #e6eef6;
+  --color-secondary: #52aa70;       /* APECO logo green (left child) */
+  --color-secondary-dark: #2f7a4a;
+  --color-secondary-light: #edf7f0;
   --color-text-main: #333333;
   --color-text-muted: #666666;
   --color-text-light: #888888;
@@ -256,7 +256,7 @@ main.site-content {
 }
 
 .brand-logo {
-  height: 64px;
+  height: 80px;
   width: auto;
   flex-shrink: 0;
 }
@@ -299,7 +299,7 @@ main.site-content {
   padding: 0.5rem 1rem;
   border-radius: var(--radius-full);
   margin-left: 0.5rem;
-  box-shadow: 0 2px 4px rgba(154, 195, 49, 0.3);
+  box-shadow: 0 2px 4px rgba(82, 170, 112, 0.3);
 }
 
 .nav-cta:hover, .nav-cta:focus {
@@ -321,7 +321,7 @@ main.site-content {
 
 /* 6. Hero Banner */
 .hero-banner {
-  background: linear-gradient(135deg, rgba(0, 138, 197, 0.08) 0%, rgba(154, 195, 49, 0.08) 100%);
+  background: linear-gradient(135deg, rgba(7, 80, 149, 0.08) 0%, rgba(82, 170, 112, 0.08) 100%);
   border-bottom: 1px solid var(--color-border);
   padding: 3rem 0;
   margin-bottom: 2rem;
@@ -650,7 +650,7 @@ main.site-content {
 .form-control:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(0, 138, 197, 0.15);
+  box-shadow: 0 0 0 3px rgba(7, 80, 149, 0.15);
 }
 
 textarea.form-control {

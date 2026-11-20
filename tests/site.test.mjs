@@ -104,7 +104,7 @@ test('the real site builds without sample content', (t) => {
   for (const page of ['index.html', 'statuts.html', 'activites.html', 'adhesion.html', 'contact.html']) {
     assert.ok(statSync(path.join(out, page)).size > 0, `${page} is not empty`);
   }
-  for (const asset of ['static/css/style.css', 'static/js/main.js', 'static/images/logo-apecov.jpg', 'static/fonts/alegreya-sans-latin-400-normal.woff2', '.nojekyll']) {
+  for (const asset of ['static/css/style.css', 'static/js/main.js', 'static/images/logo-apecov.svg', 'static/images/logo-apecov.png', 'static/fonts/alegreya-sans-latin-400-normal.woff2', '.nojekyll']) {
     assert.ok(existsSync(path.join(out, asset)), `${asset} exists`);
   }
   const statuts = readFileSync(path.join(out, 'statuts.html'), 'utf8');

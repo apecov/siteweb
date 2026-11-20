@@ -80,7 +80,7 @@ export function rssFeed({ site, entries, dates = new Map(), fallbackDate }) {
     <language>fr-CH</language>
     <lastBuildDate>${lastBuild.toUTCString()}</lastBuildDate>
     <image>
-      <url>${xml(absolute('static/images/logo-apecov.jpg'))}</url>
+      <url>${xml(absolute('static/images/logo-apecov.png'))}</url>
       <title>${xml(site.title)} – activités</title>
       <link>${xml(site.url)}</link>
     </image>

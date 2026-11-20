@@ -78,7 +78,7 @@ export function eventJsonLd(item, site) {
     location,
     organizer: coOrganizers.length ? [organizer, ...coOrganizers] : organizer,
     ...(item.performer ? { performer: { '@type': 'Person', name: item.performer } } : {}),
-    image: image || absolute(site, 'static/images/logo-apecov.jpg'),
+    image: image || absolute(site, 'static/images/logo-apecov.png'),
     url: absolute(site, item.out),
   };
 }
